@@ -57,11 +57,11 @@ proc fetchFromSource(source: string, date: Datetime): float =
     let url: string = source & date.format("yyyy/MM/dd")
 
     try: 
-        let response = client.getContent(url) # request
+        var response: string = client.getContent(url) # request
         response = response.strip() # clean response
         
         var price: float
-        if parseFloat(response, price): # overloaded from parseutils, returns ability of proc
+        if parseFloat(response, price) != 0: # overloaded from parseutils, returns ability of proc
             raise newException(DowDataError, "Could not parse price from response: " & response)
         
         return price
@@ -72,20 +72,19 @@ proc fetchFromSource(source: string, date: Datetime): float =
         raise newException(DowDataError, "Error processing response from: " & url)
 
 
-proc parseHexFloat(hexStr: string): float =
-    let cleanHexStr = hexStr[0] & hexStr[2..^1]
-
-    for i in 0..cleanHexStr.len:
-        result += parseInt(cleanHexStr[i]) * 16 ^ i
-    
-    return
+proc parseHexFloat*(hexStr: string): float =
+    let hexPart = hexStr[2..^1]  # Removes "0."
+    var intValue: uint64
+    if parseHex(hexPart, intValue) != hexPart.len:
+        raise newException(ValueError, "Invalid hex string: " & hexStr)
+    return float(intValue) / float(uint64.high)
 
 
 proc findLatestDowDate(targetDate: DateTime): Datetime = 
     # TODO: Check for holidays! https://geohashing.site/geohashing/Dow_holiday
     var checkDate: Datetime = targetDate
 
-    while checkDate.weekDate == dSat or checkDate.weekDate == dSun:
+    while checkDate.weekDay == dSat or checkDate.weekDay == dSun:
         checkDate = checkDate - 1.days
     
     return checkDate
@@ -120,9 +119,9 @@ method getDowPrice(provider: DowJonesProvider, date: DateTime): float {.base.} =
     raise newException(CatchableError, "Not Implemented")
 
 
-method getDowPrice(procider: httpDowProvider, date: Datetime): float =
+method getDowPrice(provider: HttpDowProvider, date: Datetime): float =
     # trying each soruce untill it either works or dosn't
-    var lastError: ref Exeption = nil
+    var lastError: ref Exception = nil
 
     for i in 0..provider.sources.len:
         let sourceIndex  = (provider.currentSourceIndex + i) mod provider.sources.len
@@ -132,12 +131,14 @@ method getDowPrice(procider: httpDowProvider, date: Datetime): float =
             let price = fetchFromSource(source, date)
             
             provider.currentSourceIndex = sourceIndex
+
+            return price
         
         except Exception as e:
-            latError = e
+            lastError = e
             continue # failed, try next source
     
-    raise newException(DowDataError, "All Dow Jones sources failed. Last error: " & (if lastError != nil: lastError.msg else: "Unknown error")))
+    raise newException(DowDataError, "All Dow Jones sources failed. Last error: " & (if lastError != nil: lastError.msg else: "Unknown error"))
 
 
 proc generateGeohashString(date: Datetime, dowPrice: float): string =
@@ -187,12 +188,12 @@ proc hash*(geohasher: Geohasher, date: Datetime): GeohashResult =
     let dowDate: Datetime = getApplicableDowDate(geohasher.graticule, date)
     let dowPrice: float = geohasher.dowProvider.getDowPrice(dowDate)
     let hashStr: string = generateGeohashString(dowDate, dowPrice)
-    let (latitudeOffset, longitudeOffset): float = md5ToCoordinateOffsets(hashStr)
-    let (finalLatitude, finalLongitude): float = applyOffsetsToGraticule(geohasher.graticule, latitudeOffset, longitudeOffset)
+    let (latitudeOffset, longitudeOffset): (float, float) = md5ToCoordinateOffsets(hashStr)
+    let (finalLatitude, finalLongitude): (float, float) = applyOffsetsToGraticule(geohasher.graticule, latitudeOffset, longitudeOffset)
 
     return GeohashResult(
-        latitude: finalLatitude
-        longidude: finalLongitude
+        latitude: finalLatitude,
+        longitude: finalLongitude,
         usedDowDate: dowDate
     )
 
@@ -205,10 +206,10 @@ proc xkcdgeohash*(latitude: float, longitude: float, date: DateTime, dowProvider
 
 proc newGeohasher*(latitude: int, longitude: int, dowProvider: DowJonesProvider = getDefaultDowProvider()): Geohasher =
     return Geohasher(
-        graticule: Graticule(lat: lat, lon: lon),
+        graticule: Graticule(lat: latitude, lon: longitude),
         dowProvider: dowProvider
     )
 
 
 when isMainModule:
-    discard
+    echo parseHexFloat($"0.DB9318c2259923d0")
