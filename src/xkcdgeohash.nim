@@ -14,8 +14,8 @@ import std/[md5, options, strutils, times]
 type
     # Geohashing Types
     Graticule* = object
-        latitude*: int # -90 to +90 (ambigious -0/+0 distriction excluded)
-        longitude*: int # -179 to +179 (ambigious -0/+0 distriction excluded)
+        lat*: int # -90 to +90 (ambigious -0/+0 distriction excluded)
+        lon*: int # -179 to +179 (ambigious -0/+0 distriction excluded)
     
     GeohashResult* = object
         latitude*: float
@@ -47,10 +47,13 @@ proc findLatestDowDate(targetDate: DateTime): Datetime =
     discard
 
 
+proc getDefaultDowProvider() = discard
+
+
 proc getApplicableDowDate(graticule: Graticule, targetDate: DateTime): DateTime =
     ## Determine the applicable Dow Jones opening date "DJOD"
     
-    if graticule.longitude >= -179 and graticule.longitude <= -30:
+    if graticule.lon >= -179 and graticule.lon <= -30:
         # If the longitude is between -179 and -30 inclusive, 
         # use the latest date up to and including GD on which 
         # a Dow Jones opening price has been or will be published.
@@ -73,7 +76,7 @@ method getDowPrice(provider: DowJonesProvider, date: DateTime): float {.base.} =
     # Obtain the opening price of the Dow Jones Industrial Average for the DJOD. 
     # This is usually available from 9.30 am New York time, and published to two decimal places.
 
-    raise newException(CatchableError, "Not Implemented")
+    raise newException(DowDataError, "Not Implemented")
 
 
 proc generateGeohashString(date: Datetime, dowPrice: float): string =
@@ -113,10 +116,37 @@ proc applyOffsetsToGraticule(graticule: Graticule, latitudeOffset: float, longit
     # Similarly, append the second decimal number formed to the graticule's longitude to 
     # form the geohash longitude.
 
-    let latitudeStr: string = $graticule.latitude & "." & ($latitudeOffset)[2..^1]
-    let longitudeStr: string = $graticule.latitude & "." & ($latitudeOffset)[2..^1]
+    let latitudeStr: string = $graticule.lat & "." & ($latitudeOffset)[2..^1]
+    let longitudeStr: string = $graticule.lon & "." & ($longitudeOffset)[2..^1]
     
     return (parseFloat(latitudeStr), parseFloat(longitudeStr))
+
+
+proc hash*(geohasher: Geohasher, date: Datetime): GeohashResult =
+    let dowDate: Datetime = getApplicableDowDate(geohasher.graticule, date)
+    let dowPrice: float = geohasher.dowProvider.getDowPrice(dowDate)
+    let hashStr: string = generateGeohashString(dowDate, dowPrice)
+    let (latitudeOffset, longitudeOffset): float = md5ToCoordinateOffsets(hashStr)
+    let (finalLatitude, finalLongitude): float = applyOffsetsToGraticule(geohasher.graticule, latitudeOffset, longitudeOffset)
+
+    return GeohashResult(
+        latitude: finalLatitude
+        longidude: finalLongitude
+        usedDowDate: dowDate
+    )
+
+
+proc xkcdgeohash*(latitude: float, longitude: float, date: DateTime, dowProvider: DowJonesProvider = getDefaultDowProvider()): GeohashResult =
+    let graticule = Graticule(lat: int(latitude), lon: int(longitude))
+    let geohasher = Geohasher(graticule: graticule, dowProvider: dowProvider)
+    return geohasher.hash(date)
+
+
+proc newGeohasher*(latitude: int, longitude: int, dowProvider: DowJonesProvider = getDefaultDowProvider()): Geohasher =
+    return Geohasher(
+        graticule: Graticule(lat: lat, lon: lon),
+        dowProvider: dowProvider
+    )
 
 
 when isMainModule:
