@@ -8,7 +8,7 @@
 ## Copyright (c) 2025 Your Name
 ## Licensed under MIT License
 
-import std/[md5, options, strutils, times]
+import std/[httpclient, math, md5, options, parseutils, strutils, times]
 
 
 type
@@ -29,6 +29,10 @@ type
     # Strategy Interface
     DowJonesProvider* = ref object of RootObj
 
+    HttpDowProvider* = ref object of DowJonesProvider
+        sources*: seq[string]
+        currentSourceIndex*: int
+
     # Exeption Types
     GeohashError* = object of CatchableError
     DowDataError* = object of GeohashError
@@ -39,15 +43,52 @@ const DOW_JONES_SOURCES: array[0..3, string] =
      "http://www1.geo.crox.net/djia/", "http://www2.geo.crox.net/djia/"]
 
 
+proc getDefaultDowProvider*(): DowJonesProvider = 
+    return HttpDowProvider(
+        sources: @DOW_JONES_SOURCES,
+        currentSourceIndex: 0
+    )
+
+
+proc fetchFromSource(source: string, date: Datetime): float =
+    let client = newHttpClient()
+    defer: client.close() # like try/finally, so it closes the connection when done
+
+    let url: string = source & date.format("yyyy/MM/dd")
+
+    try: 
+        let response = client.getContent(url) # request
+        response = response.strip() # clean response
+        
+        var price: float
+        if parseFloat(response, price): # overloaded from parseutils, returns ability of proc
+            raise newException(DowDataError, "Could not parse price from response: " & response)
+        
+        return price
+
+    except HttpRequestError: 
+        raise newException(DowDataError, "Failed to fetch from: " & url)
+    except:
+        raise newException(DowDataError, "Error processing response from: " & url)
+
+
 proc parseHexFloat(hexStr: string): float =
-    discard
+    let cleanHexStr = hexStr[0] & hexStr[2..^1]
+
+    for i in 0..cleanHexStr.len:
+        result += parseInt(cleanHexStr[i]) * 16 ^ i
+    
+    return
 
 
 proc findLatestDowDate(targetDate: DateTime): Datetime = 
-    discard
+    # TODO: Check for holidays! https://geohashing.site/geohashing/Dow_holiday
+    var checkDate: Datetime = targetDate
 
-
-proc getDefaultDowProvider() = discard
+    while checkDate.weekDate == dSat or checkDate.weekDate == dSun:
+        checkDate = checkDate - 1.days
+    
+    return checkDate
 
 
 proc getApplicableDowDate(graticule: Graticule, targetDate: DateTime): DateTime =
@@ -76,7 +117,27 @@ method getDowPrice(provider: DowJonesProvider, date: DateTime): float {.base.} =
     # Obtain the opening price of the Dow Jones Industrial Average for the DJOD. 
     # This is usually available from 9.30 am New York time, and published to two decimal places.
 
-    raise newException(DowDataError, "Not Implemented")
+    raise newException(CatchableError, "Not Implemented")
+
+
+method getDowPrice(procider: httpDowProvider, date: Datetime): float =
+    # trying each soruce untill it either works or dosn't
+    var lastError: ref Exeption = nil
+
+    for i in 0..provider.sources.len:
+        let sourceIndex  = (provider.currentSourceIndex + i) mod provider.sources.len
+        let source = provider.sources[sourceIndex]
+
+        try:
+            let price = fetchFromSource(source, date)
+            
+            provider.currentSourceIndex = sourceIndex
+        
+        except Exception as e:
+            latError = e
+            continue # failed, try next source
+    
+    raise newException(DowDataError, "All Dow Jones sources failed. Last error: " & (if lastError != nil: lastError.msg else: "Unknown error")))
 
 
 proc generateGeohashString(date: Datetime, dowPrice: float): string =
