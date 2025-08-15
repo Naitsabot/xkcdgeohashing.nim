@@ -8,7 +8,8 @@
 ## Copyright (c) 2025 Your Name
 ## Licensed under MIT License
 
-import std/[httpclient, md5, options, parseutils, strutils, times]
+import std/[httpclient, options, parseutils, strutils, times]
+import checksums/md5
 
 
 # =============================================================================
@@ -103,7 +104,7 @@ proc getApplicableDowDate(graticule: Graticule, targetDate: DateTime): DateTime 
 # =============================================================================
 
 
-proc getDefaultDowProvider*(): DowJonesProvider = 
+proc getDefaultDowProvider*(): HttpDowProvider = 
     return HttpDowProvider(
         sources: @DOW_JONES_SOURCES,
         currentSourceIndex: 0
@@ -249,4 +250,5 @@ proc xkcdgeohash*(latitude: float, longitude: float, date: DateTime, dowProvider
 
 
 when isMainModule:
-    echo parseHexFloat($"0.DB9318c2259923d0")
+    discard
+    # add cmd parsing
