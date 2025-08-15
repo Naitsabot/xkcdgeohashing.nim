@@ -38,17 +38,23 @@ suite "Utility Functions":
         expect(ValueError):
             discard parseHexFloat("0.GGGG")
     
-    test "findLatestDowDate weekend handling":
-        let saturday = dateTime(2012, mMay, 24, 0, 0, 0, 0, utc()) # Sunday
+    test "findLatestDowDate - weekend handling":
+        let saturday = dateTime(2012, mMay, 20, 0, 0, 0, 0, utc()) # Sunday
         let result = findLatestDowDate(saturday)
         check result.weekday != dSat
         check result.weekday != dSun
         check result <= saturday
 
-    test "findLatestDowDate weekday handling":
-        let monday = dateTime(2012, mMay, 25, 0, 0, 0, 0, utc()) # Monday
+    test "findLatestDowDate - weekday handling":
+        let monday = dateTime(2012, mMay, 21, 0, 0, 0, 0, utc()) # Monday
         let result = findLatestDowDate(monday)
-        check result.weekday = dMon
+        check result.weekday == dMon
+
+    test "getApplicableDowDate - West of 30W uses same day":
+        skip()
+
+    test "getApplicableDowDate - East of 30W uses previous day":
+        skip()
 
 
 suite "Mock Dow Provider":
@@ -56,47 +62,58 @@ suite "Mock Dow Provider":
         let mockData = @[
             (dateTime(2008, mMay, 26, 0, 0, 0, 0, utc()), 12620.90),
             (dateTime(2008, mMay, 27, 0, 0, 0, 0, utc()), 12479.63),
-            (dateTime(2012, mFeb, 26, 0, 0, 0, 0, utc()), 12981.20)
+            (dateTime(2012, mFeb, 27, 0, 0, 0, 0, utc()), 12981.20)
         ]
 
         let dowProvider = newMockDowProvider(mockData)
 
-        check provider.getDowPrice(dateTime(2008, mMay, 26, 0, 0, 0, 0, utc())) == 12620.90
-        check provider.getDowPrice(dateTime(2008, mMay, 27, 0, 0, 0, 0, utc())) == 12479.63
-        check provider.getDowPrice(dateTime(2012, mFeb, 26, 0, 0, 0, 0, utc())) == 12981.20
+        check dowProvider.getDowPrice(dateTime(2008, mMay, 26, 0, 0, 0, 0, utc())) == 12620.90
+        check dowProvider.getDowPrice(dateTime(2008, mMay, 27, 0, 0, 0, 0, utc())) == 12479.63
+        check dowProvider.getDowPrice(dateTime(2012, mFeb, 27, 0, 0, 0, 0, utc())) == 12981.20
     
     test "Mock provider throws error for missing dates":
         let dowProvider = newMockDowProvider(@[(dateTime(2008, mMay, 26), 12620.90)])
         
         # next day same month
         expect(DowDataError):
-            discard provider.getDowPrice(dateTime(2008, mMay, 25, 0, 0, 0, 0, utc()))
+            discard dowProvider.getDowPrice(dateTime(2008, mMay, 27, 0, 0, 0, 0, utc()))
 
 
 suite "Dow Jones Data Provider":
-    test "getDefaultDowProvider returns HttpDowProvider":
-        let provider: HttpDowProvider = getDefaultDowProvider()
-        check provider != nil
-        check provider is HttpDowProvider
+    test "getDefaultDowProvider - returns HttpDowProvider":
+        let dowProvider: HttpDowProvider = getDefaultDowProvider()
+        check dowProvider != nil
+        check dowProvider is HttpDowProvider
     
-    test "HttpDowProvider has expected sources":
-        let provider = getDefaultDowProvider()
-        check provider.sources.len == 4
-        check provider.sources[0] == "http://carabiner.peeron.com/xkcd/map/data/"
-        check provider.sources[1] == "http://geo.crox.net/djia/"
-        check provider.sources[2] == "http://www1.geo.crox.net/djia/"
-        check provider.sources[3] == "http://www2.geo.crox.net/djia/"
+    test "HttpDowProvider - expected sources":
+        let dowProvider = getDefaultDowProvider()
+        check dowProvider.sources.len == 4
+        check dowProvider.sources[0] == "http://carabiner.peeron.com/xkcd/map/data/"
+        check dowProvider.sources[1] == "http://geo.crox.net/djia/"
+        check dowProvider.sources[2] == "http://www1.geo.crox.net/djia/"
+        check dowProvider.sources[3] == "http://www2.geo.crox.net/djia/"
 
 
+suite "Geohash Algorithm Core":
+    test "generateGeohashString formatting":
+        skip()
+
+    test "md5ToCoordinateOffsets - expected hash":
+        skip()
+
+    test "applyOffsetsToGraticule - concatenation":
+        skip()
 
 
+suite "Public API":
+    test "newGeohasher - valid object instance":
+        skip()
 
-#[ suite "Geohash Algorithm Core":
-    skip() ]#
+    test "hash - expected results":
+        skip()
 
-
-#[ suite "Public API":
-    skip() ]#
+    test "xkcdgeohash - exprected results":
+        skip()
 
 
 # https://geohashing.site/geohashing/30W_Time_Zone_Rule

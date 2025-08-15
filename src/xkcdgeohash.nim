@@ -59,7 +59,7 @@ const DOW_JONES_SOURCES: array[0..3, string] =
 # =============================================================================
 
 
-proc parseHexFloat*(hexStr: string): float =
+proc parseHexFloat(hexStr: string): float =
     let hexPart = hexStr[2..^1]  # Removes "0."
     var intValue: uint64
     if parseHex(hexPart, intValue) != hexPart.len:
@@ -133,7 +133,7 @@ proc fetchFromSource(source: string, date: Datetime): float =
         raise newException(DowDataError, "Error processing response from: " & url)
 
 
-method getDowPrice(provider: DowJonesProvider, date: DateTime): float {.base.} =
+method getDowPrice*(provider: DowJonesProvider, date: DateTime): float {.base.} =
     # Obtain the opening price of the Dow Jones Industrial Average for the DJOD. 
     # This is usually available from 9.30 am New York time, and published to two decimal places.
 
