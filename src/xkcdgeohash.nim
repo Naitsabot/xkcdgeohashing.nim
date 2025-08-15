@@ -251,4 +251,8 @@ proc xkcdgeohash*(latitude: float, longitude: float, date: DateTime, dowProvider
 
 when isMainModule:
     discard
-    # add cmd parsing
+    # TODO: add cmd parsing
+
+when defined(test):
+    export parseHexFloat, findLatestDowDate, getApplicableDowDate, 
+           generateGeohashString, md5ToCoordinateOffsets, applyOffsetsToGraticule

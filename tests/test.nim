@@ -9,8 +9,12 @@ type MockDowProvider = ref object of DowJonesProvider
     data: seq[(DateTime, float)]
 
 
-method getDowPrice(provider: MockDowProvider, date: Datetime): float =
-    discard
+method getDowPrice(dowProvider: MockDowProvider, date: Datetime): float =
+    for (mockdate, price) in dowProvider.data:
+        if mockdate.format("yyyy-MM-dd") == date.format("yyyy-MM-dd"):
+            return price
+        
+    raise newException(DowDataError, "No mock data for date: " & date.format("yyyy-MM-dd"))
 
 
 proc newMockDowProvider(data: seq[(DateTime, float)]): MockDowProvider =
