@@ -3,6 +3,19 @@ import std/times
 
 import xkcdgeohash
 
+# Mock Dow Jones Provider
+
+type MockDowProvider = ref object of DowJonesProvider
+    data: seq[(DateTime, float)]
+
+
+method getDowPrice(provider: MockDowProvider, date: Datetime): float =
+    discard
+
+
+proc newMockDowProvider(data: seq[(DateTime, float)]): MockDowProvider =
+    return MockDowProvider(data: data)
+
 
 suite "Utility Functions":
     test "parseHexFloat  - basic conversion":
@@ -24,6 +37,40 @@ suite "Utility Functions":
             discard parseHexFloat("invalid")
         expect(ValueError):
             discard parseHexFloat("0.GGGG")
+    
+    test "findLatestDowDate weekend handling":
+        let saturday = dateTime(2012, mMay, 24, 0, 0, 0, 0, utc()) # Sunday
+        let result = findLatestDowDate(saturday)
+        check result.weekday != dSat
+        check result.weekday != dSun
+        check result <= saturday
+
+    test "findLatestDowDate weekday handling":
+        let monday = dateTime(2012, mMay, 25, 0, 0, 0, 0, utc()) # Monday
+        let result = findLatestDowDate(monday)
+        check result.weekday = dMon
+
+
+suite "Mock Dow Provider":
+    test "Create mock provider with test data":
+        let mockData = @[
+            (dateTime(2008, mMay, 26, 0, 0, 0, 0, utc()), 12620.90),
+            (dateTime(2008, mMay, 27, 0, 0, 0, 0, utc()), 12479.63),
+            (dateTime(2012, mFeb, 26, 0, 0, 0, 0, utc()), 12981.20)
+        ]
+
+        let dowProvider = newMockDowProvider(mockData)
+
+        check provider.getDowPrice(dateTime(2008, mMay, 26, 0, 0, 0, 0, utc())) == 12620.90
+        check provider.getDowPrice(dateTime(2008, mMay, 27, 0, 0, 0, 0, utc())) == 12479.63
+        check provider.getDowPrice(dateTime(2012, mFeb, 26, 0, 0, 0, 0, utc())) == 12981.20
+    
+    test "Mock provider throws error for missing dates":
+        let dowProvider = newMockDowProvider(@[(dateTime(2008, mMay, 26), 12620.90)])
+        
+        # next day same month
+        expect(DowDataError):
+            discard provider.getDowPrice(dateTime(2008, mMay, 25, 0, 0, 0, 0, utc()))
 
 
 suite "Dow Jones Data Provider":
@@ -41,12 +88,7 @@ suite "Dow Jones Data Provider":
         check provider.sources[3] == "http://www2.geo.crox.net/djia/"
 
 
-suite "Mock Dow Provider":
-    test "Create mock provider":
-        type MockDowProvider = ref object of DowJonesProvider
-            data: seq[(DateTime, float)]
-        
-        skip()
+
 
 
 #[ suite "Geohash Algorithm Core":
