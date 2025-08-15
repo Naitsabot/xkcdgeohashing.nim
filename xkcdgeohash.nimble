@@ -5,6 +5,7 @@ author        = "Naitsabot"
 description   = "Implementation for the geohashing algorithm described in xkcd #426"
 license       = "MIT"
 srcDir        = "src"
+bin           = @["xkcdgeohash"]
 
 
 # Dependencies

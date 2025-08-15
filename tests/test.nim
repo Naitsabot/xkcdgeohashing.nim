@@ -99,7 +99,7 @@ suite "Dow Jones Data Provider":
 
 
 suite "Geohash Algorithm Core":
-    test "generateGeohashString formatting":
+    test "generateGeohashString - formatting":
         skip()
 
     test "md5ToCoordinateOffsets - expected hash":

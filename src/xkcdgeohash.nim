@@ -8,7 +8,7 @@
 ## Copyright (c) 2025 Your Name
 ## Licensed under MIT License
 
-import std/[httpclient, options, parseutils, strutils, times]
+import std/[httpclient, parseutils, strutils, times]
 import checksums/md5
 
 
