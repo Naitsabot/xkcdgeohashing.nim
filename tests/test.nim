@@ -198,7 +198,7 @@ suite "Public API":
         let mockProvider: MockDowProvider = newMockDowProvider(mockData)
         let geohasher: Geohasher = newGeohasher(68, -30, mockProvider)
 
-        let result: GeohashResult = westGeohasher.hash(dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()))
+        let result: GeohashResult = geohasher.hash(dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()))
 
         check abs(result.latitude - 68.000047) < GEO_TOLERANCE
         check abs(result.longitude - -30.483719) < GEO_TOLERANCE
@@ -226,24 +226,24 @@ suite "Public API":
         check abs(result.longitude - -30.483719) < GEO_TOLERANCE
 
     test "xkcdgeohash - 30W rule test (west side)":
-        let mockData: seq[(DateTime, float)] = @[(dateTime(2012, mMay, 21), 12981.20)]
+        let mockData: seq[(DateTime, float)] = @[(dateTime(2000, mDec, 13), 12981.20)]
         let mockProvider: MockDowProvider = newMockDowProvider(mockData)
         
         # Minneapolis area (west of 30W)
-        let result: GeohashResult = xkcdgeohash(45.0, -93.0, dateTime(2012, mMay, 21), mockProvider)
+        let result: GeohashResult = xkcdgeohash(45.0, -93.0, dateTime(2000, mDec, 13), mockProvider)
         
-        check result.usedDowDate.format("yyyy-MM-dd") == "2012-05-21"  # Same day
-        check result.usedDate.format("yyyy-MM-dd") == "2012-05-21"
+        check result.usedDowDate.format("yyyy-MM-dd") == "2000-12-13"  # Same day
+        check result.usedDate.format("yyyy-MM-dd") == "2000-12-13"
 
     test "xkcdgeohash - 30W rule test (east side)":
-        let mockData: seq[(DateTime, float)] = @[(dateTime(2012, mMay, 20), 12981.20)]  # Note: previous day
+        let mockData: seq[(DateTime, float)] = @[(dateTime(2000, mDec, 12), 12981.20)]  # Note: previous day
         let mockProvider: MockDowProvider = newMockDowProvider(mockData)
         
         # Berlin area (east of 30W)  
-        let result: GeohashResult = xkcdgeohash(52.0, 13.0, dateTime(2012, mMay, 21), mockProvider)
+        let result: GeohashResult = xkcdgeohash(52.0, 13.0, dateTime(2000, mDec, 13), mockProvider)
         
-        check result.usedDowDate.format("yyyy-MM-dd") == "2012-05-20"  # Previous day
-        check result.usedDate.format("yyyy-MM-dd") == "2012-05-21"
+        check result.usedDowDate.format("yyyy-MM-dd") == "2000-12-12"  # Previous day
+        check result.usedDate.format("yyyy-MM-dd") == "2000-12-13"
 
 # https://geohashing.site/geohashing/30W_Time_Zone_Rule#Testing_for_30W_compliance
 suite "Official Test for 30W Time Zone Rule":
