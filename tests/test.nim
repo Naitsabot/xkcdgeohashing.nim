@@ -226,24 +226,24 @@ suite "Public API":
         check abs(result.longitude - -30.483719) < GEO_TOLERANCE
 
     test "xkcdgeohash - 30W rule test (west side)":
-        let mockData: seq[(DateTime, float)] = @[(dateTime(2000, mDec, 13), 12981.20)]
+        let mockData: seq[(DateTime, float)] = @[(dateTime(2025, mAug, 19), 12981.20)]
         let mockProvider: MockDowProvider = newMockDowProvider(mockData)
         
         # Minneapolis area (west of 30W)
-        let result: GeohashResult = xkcdgeohash(45.0, -93.0, dateTime(2000, mDec, 13), mockProvider)
+        let result: GeohashResult = xkcdgeohash(45.0, -93.0, dateTime(2025, mAug, 19), mockProvider)
         
-        check result.usedDowDate.format("yyyy-MM-dd") == "2000-12-13"  # Same day
-        check result.usedDate.format("yyyy-MM-dd") == "2000-12-13"
+        check result.usedDowDate.format("yyyy-MM-dd") == "2025-08-19"  # Same day
+        check result.usedDate.format("yyyy-MM-dd") == "2025-08-19"
 
     test "xkcdgeohash - 30W rule test (east side)":
-        let mockData: seq[(DateTime, float)] = @[(dateTime(2000, mDec, 12), 12981.20)]  # Note: previous day
+        let mockData: seq[(DateTime, float)] = @[(dateTime(2025, mAug, 18), 12981.20)]  # Note: previous day
         let mockProvider: MockDowProvider = newMockDowProvider(mockData)
         
         # Berlin area (east of 30W)  
-        let result: GeohashResult = xkcdgeohash(52.0, 13.0, dateTime(2000, mDec, 13), mockProvider)
+        let result: GeohashResult = xkcdgeohash(52.0, 13.0, dateTime(2025, mAug, 19), mockProvider)
         
-        check result.usedDowDate.format("yyyy-MM-dd") == "2000-12-12"  # Previous day
-        check result.usedDate.format("yyyy-MM-dd") == "2000-12-13"
+        check result.usedDowDate.format("yyyy-MM-dd") == "2025-08-18"  # Previous day
+        check result.usedDate.format("yyyy-MM-dd") == "2025-08-19"
 
 # https://geohashing.site/geohashing/30W_Time_Zone_Rule#Testing_for_30W_compliance
 suite "Official Test for 30W Time Zone Rule":
@@ -288,8 +288,6 @@ suite "Official Test for 30W Time Zone Rule":
 
             let westResult: GeohashResult = westGeohasher.hash(date)
             let eastResult: GeohashResult = eastGeohasher.hash(date)
-
-            echo i
 
             check abs(westResult.latitude - westExpected[i][0]) < GEO_TOLERANCE
             check abs(eastResult.latitude - eastExpected[i][0]) < GEO_TOLERANCE
