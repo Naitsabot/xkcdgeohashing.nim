@@ -5,7 +5,7 @@
 ## 
 ## Basic usage:
 ##
-## Copyright (c) 2025 Your Name
+## Copyright (c) 2025 Sebastian H. Lorenzen
 ## Licensed under MIT License
 
 import std/[httpclient, parseutils, strutils, times]
@@ -61,7 +61,7 @@ const DOW_JONES_SOURCES: array[0..3, string] =
 
 
 proc parseHexFloat(hexStr: string): float =
-    let hexPart = hexStr[2..^1]  # Removes "0."
+    let hexPart: string = hexStr[2..^1]  # Removes "0."
     var intValue: uint64
     if parseHex(hexPart, intValue) != hexPart.len:
         raise newException(ValueError, "Invalid hex string: " & hexStr)
@@ -114,7 +114,7 @@ proc getDefaultDowProvider*(): HttpDowProvider =
 
 
 proc fetchFromSource(source: string, date: Datetime): float =
-    let client = newHttpClient()
+    let client: HttpClient = newHttpClient()
     defer: client.close() # like try/finally, so it closes the connection when done
 
     let url: string = source & date.format("yyyy/MM/dd")
@@ -151,7 +151,7 @@ method getDowPrice(provider: HttpDowProvider, date: Datetime): float =
         let source = provider.sources[sourceIndex]
 
         try:
-            let price = fetchFromSource(source, date)
+            let price: float = fetchFromSource(source, date)
             
             provider.currentSourceIndex = sourceIndex
 
@@ -242,8 +242,8 @@ proc hash*(geohasher: Geohasher, date: Datetime): GeohashResult =
 # Functional API
 
 proc xkcdgeohash*(latitude: float, longitude: float, date: DateTime, dowProvider: DowJonesProvider = getDefaultDowProvider()): GeohashResult =
-    let graticule = Graticule(lat: int(latitude), lon: int(longitude))
-    let geohasher = Geohasher(graticule: graticule, dowProvider: dowProvider)
+    let graticule: Graticule = Graticule(lat: int(latitude), lon: int(longitude))
+    let geohasher: Geohasher = Geohasher(graticule: graticule, dowProvider: dowProvider)
     return geohasher.hash(date)
 
 

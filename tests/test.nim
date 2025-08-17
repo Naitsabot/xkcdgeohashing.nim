@@ -1,3 +1,14 @@
+## Geohashing library for Nim - Testing
+##
+## Implementation of the geohashing algorithm from https://xkcd.com/426/
+## Algorithm spec can be seen at: https://geohashing.site/geohashing/The_Algorithm
+## 
+## Basic usage:
+## Run: `nimble test`
+##
+## Copyright (c) 2025 Sebastian H. Lorenzen
+## Licensed under MIT License
+
 import unittest
 import std/times
 
