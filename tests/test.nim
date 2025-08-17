@@ -95,9 +95,6 @@ suite "Utility Functions":
         check result == testDate
 
 
-68, -30
-68, -29
-
 suite "Mock Dow Provider":
     test "Create mock provider with test data":
         let mockData: seq[(DateTime, float)] = @[
