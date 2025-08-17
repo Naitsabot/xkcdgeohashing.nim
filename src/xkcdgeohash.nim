@@ -69,6 +69,7 @@ proc parseHexFloat(hexStr: string): float =
 
 proc findLatestDowDate(targetDate: DateTime): Datetime = 
     # TODO: Check for holidays! https://geohashing.site/geohashing/Dow_holiday
+    # TODO: Account for 2008-05-26 - 2008-05-27 meta shift, except if global hash
     var checkDate: Datetime = targetDate
 
     while checkDate.weekDay == dSat or checkDate.weekDay == dSun:
@@ -174,7 +175,7 @@ proc generateGeohashString(date: Datetime, dowPrice: float): string =
 
     let dateStr: string = date.format("yyyy-MM-dd")
     let priceStr: string = dowPrice.formatFloat(format = ffDecimal, precision = 2) # formats floats to two decimals
-    return datestr & "-" & priceStr
+    return datestr & "-" & priceStr # Nim Strings are UTF-8 by default
 
 
 proc md5ToCoordinateOffsets(hashStr: string): (float, float) =

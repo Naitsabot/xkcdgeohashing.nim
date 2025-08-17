@@ -42,6 +42,9 @@ suite "Utility Functions":
         expect(ValueError):
             discard parseHexFloat("0.GGGG")
     
+    test "parseHexFloat - small values":
+        skip()
+    
     test "findLatestDowDate - weekend handling":
         let saturday = dateTime(2012, mMay, 20, 0, 0, 0, 0, utc()) # Sunday
         let result = findLatestDowDate(saturday)
@@ -120,11 +123,41 @@ suite "Public API":
         skip()
 
 
-# https://geohashing.site/geohashing/30W_Time_Zone_Rule
-#[ suite "Official Test for 30W Time Zone Rule":
-    skip() ]#
+# https://geohashing.site/geohashing/30W_Time_Zone_Rule#Testing_for_30W_compliance
+suite "Official Test for 30W Time Zone Rule":
+    test "1":
+        skip()
+
+    test "2":
+        skip()
 
 
-# https://geohashing.site/geohashing/30W_Time_Zone_Rule
-#[ suite "Official Test for The Scientific Notation Bug":
-    skip() ]#
+# https://geohashing.site/geohashing/30W_Time_Zone_Rule#Testing_for_the_scientific_notation_bug
+suite "Official Test for The Scientific Notation Bug":
+    test "2012-02-26 coordinates testdata edge case":
+        let mockData = @[
+            (dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()), 12981.20), # Fri
+            (dateTime(2012, mFeb, 25, 0, 0, 0, 0, utc()), 12981.20), # Sat
+            (dateTime(2012, mFeb, 26, 0, 0, 0, 0, utc()), 12981.20) # Sun
+        ]
+        let dowProvider = newMockDowProvider(mockData)
+
+        let date: Datetime = dateTime(2012, mFeb, 26, 0, 0, 0, 0, utc())
+
+        let westGeohasher: Geohasher = newGeohasher(68, -30, dowProvider)
+        let eastGeohasher: Geohasher = newGeohasher(68, -29, dowProvider)
+
+        let westResult = westGeohasher.hash(date)
+        let eastResult = eastGeohasher.hash(date)
+
+        check abs(westResult.latitude - 68.000047) < 0.000001 # approximation
+        check abs(eastResult.latitude - 68.000047) < 0.000001
+
+        check abs(westResult.longitude - -30.483719) < 0.000001 # approximation
+        check abs(eastResult.longitude - -29.483719) < 0.000001
+
+        echo "west: " & $westResult.latitude & " " & $westResult.longitude
+        echo "east: " & $eastResult.latitude & " " & $eastResult.longitude
+
+
+echo ""
