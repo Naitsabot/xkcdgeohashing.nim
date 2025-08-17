@@ -27,6 +27,7 @@ type
         latitude*: float
         longitude*: float
         usedDowDate*: DateTime
+        usedDate*: DateTime
     
     Geohasher* = object
         graticule*: Graticule
@@ -96,7 +97,7 @@ proc getApplicableDowDate(graticule: Graticule, targetDate: DateTime): DateTime 
         # (DJOD will always be at least one day earlier than GD.)
 
         # using date up to and including (targetDate - 1 day)
-        result = findLatestDowDate(targetDate)
+        result = findLatestDowDate(targetDate - 1.days)
     return
 
 
@@ -234,7 +235,8 @@ proc hash*(geohasher: Geohasher, date: Datetime): GeohashResult =
     return GeohashResult(
         latitude: finalLatitude,
         longitude: finalLongitude,
-        usedDowDate: dowDate
+        usedDowDate: dowDate,
+        usedDate: date
     )
 
 # Functional API
