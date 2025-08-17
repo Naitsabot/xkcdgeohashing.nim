@@ -52,7 +52,7 @@ suite "Utility Functions":
             discard parseHexFloat("0.GGGG")
     
     test "parseHexFloat - small values":
-        let result = parseHexFloat("0.0000000000000001")
+        let result: float = parseHexFloat("0.0000000000000001")
         check result > 0.0
         check result < 0.000001  # Small but not zero
     
@@ -153,7 +153,7 @@ suite "Geohash Algorithm Core":
         check abs(lonOffset - 0.54454306955928210562) < 0.00000000001
 
     test "applyOffsetsToGraticule - positive graticule":
-        let graticule = Graticule(lat: 68, lon: -30)
+        let graticule: Graticule = Graticule(lat: 68, lon: -30)
         let latOffset: float = 0.85771326770700234438
         let lonOffset: float = 0.54454306955928210562
 
@@ -163,7 +163,7 @@ suite "Geohash Algorithm Core":
         check abs(finalLon - -30.54454306955928210562) < GEO_TOLERANCE
 
     test "applyOffsetsToGraticule - negative graticule":
-        let graticule = Graticule(lat: -1, lon: -1)
+        let graticule: Graticule = Graticule(lat: -1, lon: -1)
         let latOffset: float = 0.85771326770700234438
         let lonOffset: float = 0.54454306955928210562
 
@@ -222,6 +222,7 @@ suite "Public API":
         let result: GeohashResult = xkcdgeohash(45.0, -93.0, dateTime(2012, mMay, 21), mockProvider)
         
         check result.usedDowDate.format("yyyy-MM-dd") == "2012-05-21"  # Same day
+        check result.usedDate.format("yyyy-MM-dd") == "2012-05-21"
 
     test "xkcdgeohash - 30W rule test (east side)":
         let mockData: seq[(DateTime, float)] = @[(dateTime(2012, mMay, 20), 12981.20)]  # Note: previous day
@@ -231,6 +232,7 @@ suite "Public API":
         let result: GeohashResult = xkcdgeohash(52.0, 13.0, dateTime(2012, mMay, 21), mockProvider)
         
         check result.usedDowDate.format("yyyy-MM-dd") == "2012-05-20"  # Previous day
+        check result.usedDate.format("yyyy-MM-dd") == "2012-05-21"
 
 # https://geohashing.site/geohashing/30W_Time_Zone_Rule#Testing_for_30W_compliance
 suite "Official Test for 30W Time Zone Rule":
