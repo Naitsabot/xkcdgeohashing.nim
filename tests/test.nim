@@ -160,8 +160,5 @@ suite "Official Test for The Scientific Notation Bug":
         check abs(westResult.longitude - (-30.483719)) < 0.000001 # approximation
         check abs(eastResult.longitude - (-29.483719)) < 0.000001
 
-        echo "west: " & $westResult.latitude & " " & $westResult.longitude
-        echo "east: " & $eastResult.latitude & " " & $eastResult.longitude
-
 
 echo ""

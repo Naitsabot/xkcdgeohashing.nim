@@ -228,7 +228,6 @@ proc hash*(geohasher: Geohasher, date: Datetime): GeohashResult =
     let dowDate: Datetime = getApplicableDowDate(geohasher.graticule, date)
     let dowPrice: float = geohasher.dowProvider.getDowPrice(dowDate)
     let hashStr: string = generateGeohashString(date, dowPrice)
-    echo "hashStr: " & hashStr
     let (latitudeOffset, longitudeOffset): (float, float) = md5ToCoordinateOffsets(hashStr)
     let (finalLatitude, finalLongitude): (float, float) = applyOffsetsToGraticule(geohasher.graticule, latitudeOffset, longitudeOffset)
 
