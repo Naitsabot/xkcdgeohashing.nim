@@ -90,7 +90,7 @@ proc getApplicableDowDate(graticule: Graticule, targetDate: DateTime): DateTime 
 
         # using date up to and including targetDate
         result = findLatestDowDate(targetDate)
-    else:
+    elif targetDate > dateTime(2008, mMay, 26):
         # Otherwise (if the longitude is between -29 and +179 inclusive), 
         # use the latest date up to and including one day before GD on 
         # which a Dow Jones opening price has been or will be published. 
@@ -98,6 +98,8 @@ proc getApplicableDowDate(graticule: Graticule, targetDate: DateTime): DateTime 
 
         # using date up to and including (targetDate - 1 day)
         result = findLatestDowDate(targetDate - 1.days)
+    else:
+        result = findLatestDowDate(targetDate)
     return
 
 
