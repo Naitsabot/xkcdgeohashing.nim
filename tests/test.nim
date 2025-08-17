@@ -83,7 +83,7 @@ suite "Utility Functions":
 
 
     test "getApplicableDowDate - West of 30W uses same day - 2008-05-26 and earlier":
-        let graticule = Graticule(lat: 68, lon: -29)
+        let graticule = Graticule(lat: 68, lon: -30)
         let date: DateTime = dateTime(2007, mApr, 13, 0, 0, 0, 0, utc()) # Friday
         let result = getApplicableDowDate(graticule, testDate)
         check result == testDate
