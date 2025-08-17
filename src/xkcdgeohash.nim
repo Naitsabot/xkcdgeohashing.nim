@@ -8,7 +8,8 @@
 ## Copyright (c) 2025 Your Name
 ## Licensed under MIT License
 
-import std/[httpclient, md5, options, parseutils, strutils, times]
+import std/[httpclient, parseutils, strutils, times]
+import checksums/md5
 
 
 # =============================================================================
@@ -26,6 +27,7 @@ type
         latitude*: float
         longitude*: float
         usedDowDate*: DateTime
+        usedDate*: DateTime
     
     Geohasher* = object
         graticule*: Graticule
@@ -58,7 +60,7 @@ const DOW_JONES_SOURCES: array[0..3, string] =
 # =============================================================================
 
 
-proc parseHexFloat*(hexStr: string): float =
+proc parseHexFloat(hexStr: string): float =
     let hexPart = hexStr[2..^1]  # Removes "0."
     var intValue: uint64
     if parseHex(hexPart, intValue) != hexPart.len:
@@ -68,6 +70,7 @@ proc parseHexFloat*(hexStr: string): float =
 
 proc findLatestDowDate(targetDate: DateTime): Datetime = 
     # TODO: Check for holidays! https://geohashing.site/geohashing/Dow_holiday
+    # TODO: Account for 2008-05-26 - 2008-05-27 meta shift, except if global hash
     var checkDate: Datetime = targetDate
 
     while checkDate.weekDay == dSat or checkDate.weekDay == dSun:
@@ -94,7 +97,7 @@ proc getApplicableDowDate(graticule: Graticule, targetDate: DateTime): DateTime 
         # (DJOD will always be at least one day earlier than GD.)
 
         # using date up to and including (targetDate - 1 day)
-        result = findLatestDowDate(targetDate)
+        result = findLatestDowDate(targetDate - 1.days)
     return
 
 
@@ -103,7 +106,7 @@ proc getApplicableDowDate(graticule: Graticule, targetDate: DateTime): DateTime 
 # =============================================================================
 
 
-proc getDefaultDowProvider*(): DowJonesProvider = 
+proc getDefaultDowProvider*(): HttpDowProvider = 
     return HttpDowProvider(
         sources: @DOW_JONES_SOURCES,
         currentSourceIndex: 0
@@ -132,7 +135,7 @@ proc fetchFromSource(source: string, date: Datetime): float =
         raise newException(DowDataError, "Error processing response from: " & url)
 
 
-method getDowPrice(provider: DowJonesProvider, date: DateTime): float {.base.} =
+method getDowPrice*(provider: DowJonesProvider, date: DateTime): float {.base.} =
     # Obtain the opening price of the Dow Jones Industrial Average for the DJOD. 
     # This is usually available from 9.30 am New York time, and published to two decimal places.
 
@@ -173,7 +176,7 @@ proc generateGeohashString(date: Datetime, dowPrice: float): string =
 
     let dateStr: string = date.format("yyyy-MM-dd")
     let priceStr: string = dowPrice.formatFloat(format = ffDecimal, precision = 2) # formats floats to two decimals
-    return datestr & "-" & priceStr
+    return datestr & "-" & priceStr # Nim Strings are UTF-8 by default
 
 
 proc md5ToCoordinateOffsets(hashStr: string): (float, float) =
@@ -225,14 +228,15 @@ proc newGeohasher*(latitude: int, longitude: int, dowProvider: DowJonesProvider 
 proc hash*(geohasher: Geohasher, date: Datetime): GeohashResult =
     let dowDate: Datetime = getApplicableDowDate(geohasher.graticule, date)
     let dowPrice: float = geohasher.dowProvider.getDowPrice(dowDate)
-    let hashStr: string = generateGeohashString(dowDate, dowPrice)
+    let hashStr: string = generateGeohashString(date, dowPrice)
     let (latitudeOffset, longitudeOffset): (float, float) = md5ToCoordinateOffsets(hashStr)
     let (finalLatitude, finalLongitude): (float, float) = applyOffsetsToGraticule(geohasher.graticule, latitudeOffset, longitudeOffset)
 
     return GeohashResult(
         latitude: finalLatitude,
         longitude: finalLongitude,
-        usedDowDate: dowDate
+        usedDowDate: dowDate,
+        usedDate: date
     )
 
 # Functional API
@@ -249,4 +253,9 @@ proc xkcdgeohash*(latitude: float, longitude: float, date: DateTime, dowProvider
 
 
 when isMainModule:
-    echo parseHexFloat($"0.DB9318c2259923d0")
+    discard
+    # TODO: add cmd parsing
+
+when defined(test):
+    export parseHexFloat, findLatestDowDate, getApplicableDowDate, 
+           generateGeohashString, md5ToCoordinateOffsets, applyOffsetsToGraticule
