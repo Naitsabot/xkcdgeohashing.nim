@@ -52,7 +52,9 @@ suite "Utility Functions":
             discard parseHexFloat("0.GGGG")
     
     test "parseHexFloat - small values":
-        skip()
+        let result = parseHexFloat("0.0000000000000001")
+        check result > 0.0
+        check result < 0.000001  # Small but not zero
     
     test "findLatestDowDate - weekend handling":
         let saturday: DateTime = dateTime(2012, mMay, 20, 0, 0, 0, 0, utc()) # Sunday
@@ -67,11 +69,34 @@ suite "Utility Functions":
         check result.weekday == dMon
 
     test "getApplicableDowDate - West of 30W uses same day":
-        skip()
+        let graticule: Graticule = Graticule(lat: 68, lon: -30)
+        let date: DateTime = dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()) # Friday
+        let result = getApplicableDowDate(graticule, testDate)
+        check result == testDate
+
 
     test "getApplicableDowDate - East of 30W uses previous day":
-        skip()
+        let graticule = Graticule(lat: 68, lon: -29)
+        let date: DateTime = dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()) # Friday
+        let result = getApplicableDowDate(graticule, testDate)
+        check result == (testDate - 1.days) # Should be prev day
 
+
+    test "getApplicableDowDate - West of 30W uses same day - 2008-05-26 and earlier":
+        let graticule = Graticule(lat: 68, lon: -29)
+        let date: DateTime = dateTime(2007, mApr, 13, 0, 0, 0, 0, utc()) # Friday
+        let result = getApplicableDowDate(graticule, testDate)
+        check result == testDate
+
+    test "getApplicableDowDate - East of 30W uses same day - 2008-05-26 and earlier":
+        let graticule = Graticule(lat: 68, lon: -29)
+        let date: DateTime = dateTime(2007, mApr, 13, 0, 0, 0, 0, utc()) # Friday
+        let result = getApplicableDowDate(graticule, testDate)
+        check result == testDate
+
+
+68, -30
+68, -29
 
 suite "Mock Dow Provider":
     test "Create mock provider with test data":
@@ -201,7 +226,7 @@ suite "Official Test for 30W Time Zone Rule":
         ] 
 
         let mockData: seq[(DateTime, float)] = @[
-            (dateTime(2008, mMay, 26, 0, 0, 0, 0, utc()), 12620.90), # from earlier
+            (dateTime(2008, mMay, 26, 0, 0, 0, 0, utc()), 12620.90), # Needed for 2008-05-27 east
             (dateTime(2008, mMay, 27, 0, 0, 0, 0, utc()), 12479.63),
             (dateTime(2008, mMay, 28, 0, 0, 0, 0, utc()), 12542.90),
             (dateTime(2008, mMay, 29, 0, 0, 0, 0, utc()), 12593.87),
