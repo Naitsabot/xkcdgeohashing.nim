@@ -175,14 +175,62 @@ suite "Geohash Algorithm Core":
 
 suite "Public API":
     test "newGeohasher - valid object instance":
-        skip()
+        let mockProvider: MockDowProvider = newMockDowProvider(@[(dateTime(2000, mDec, 13, 0, 0, 0, 0, utc()), 19992.19)])
+        let geohasher: Geohasher = newGeohasher(68, -30, mockProvider)
+        
+        check geohasher.graticule.lat == 68
+        check geohasher.graticule.lon == -30
+        check geohasher.dowProvider == mockProvider
 
-    test "hash - expected results":
-        skip()
+    test "hash - expected results from known data":
+        let mockData: seq[(DateTime, float)] = @[(dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()), 12981.20)]
+        let mockProvider: MockDowProvider = newMockDowProvider(mockData)
+        let geohasher: Geohasher = newGeohasher(68, -30, mockProvider)
+
+        let result: GeohashResult = westGeohasher.hash(dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()))
+
+        check abs(result.latitude - 68.000047) < GEO_TOLERANCE
+        check abs(result.longitude - -30.483719) < GEO_TOLERANCE
+        check result.usedDowDate.format("yyyy-MM-dd") == "2012-02-24"
+        check result.usedDate.format("yyyy-MM-dd") == "2012-02-24"
+
+    test "hash - expected results with known data - xkcd comic":
+        let mockData: seq[(DateTime, float)] = @[(dateTime(2005, mMay, 26), 10458.68)]
+        let mockProvider: MockDowProvider = newMockDowProvider(mockData)
+        let geohasher: Geohasher = newGeohasher(68, -30, mockProvider)
+        
+        let result: GeohashResult = geohasher.hash(dateTime(2005, mMay, 26))
+        
+        check abs(result.latitude - 68.8577) < GEO_TOLERANCE
+        check abs(result.longitude - (-30.5449)) < GEO_TOLERANCE
+        check result.usedDowDate.format("yyyy-MM-dd") == "2005-05-26"
 
     test "xkcdgeohash - exprected results":
-        skip()
+        let mockData: seq[(DateTime, float)] = @[(dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()), 12981.20)]
+        let mockProvider: MockDowProvider = newMockDowProvider(mockData)
+        
+        let result: GeohashResult = xkcdgeohash(68.0, -30.0, dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()), mockProvider)
+        
+        check abs(result.latitude - 68.000047) < GEO_TOLERANCE
+        check abs(result.longitude - -30.483719) < GEO_TOLERANCE
 
+    test "xkcdgeohash - 30W rule test (west side)":
+        let mockData: seq[(DateTime, float)] = @[(dateTime(2012, mMay, 21), 12981.20)]
+        let mockProvider: MockDowProvider = newMockDowProvider(mockData)
+        
+        # Minneapolis area (west of 30W)
+        let result: GeohashResult = xkcdgeohash(45.0, -93.0, dateTime(2012, mMay, 21), mockProvider)
+        
+        check result.usedDowDate.format("yyyy-MM-dd") == "2012-05-21"  # Same day
+
+    test "xkcdgeohash - 30W rule test (east side)":
+        let mockData: seq[(DateTime, float)] = @[(dateTime(2012, mMay, 20), 12981.20)]  # Note: previous day
+        let mockProvider: MockDowProvider = newMockDowProvider(mockData)
+        
+        # Berlin area (east of 30W)  
+        let result: GeohashResult = xkcdgeohash(52.0, 13.0, dateTime(2012, mMay, 21), mockProvider)
+        
+        check result.usedDowDate.format("yyyy-MM-dd") == "2012-05-20"  # Previous day
 
 # https://geohashing.site/geohashing/30W_Time_Zone_Rule#Testing_for_30W_compliance
 suite "Official Test for 30W Time Zone Rule":
