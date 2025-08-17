@@ -150,11 +150,15 @@ suite "Official Test for The Scientific Notation Bug":
         let westResult = westGeohasher.hash(date)
         let eastResult = eastGeohasher.hash(date)
 
+        # From official table:
+        # West (68, -30): 68.68745, -30.21221
+        # East (68, -29): 68.71044, -29.11273
+
         check abs(westResult.latitude - 68.000047) < 0.000001 # approximation
         check abs(eastResult.latitude - 68.000047) < 0.000001
 
-        check abs(westResult.longitude - -30.483719) < 0.000001 # approximation
-        check abs(eastResult.longitude - -29.483719) < 0.000001
+        check abs(westResult.longitude - (-30.483719)) < 0.000001 # approximation
+        check abs(eastResult.longitude - (-29.483719)) < 0.000001
 
         echo "west: " & $westResult.latitude & " " & $westResult.longitude
         echo "east: " & $eastResult.latitude & " " & $eastResult.longitude
