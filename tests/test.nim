@@ -71,28 +71,28 @@ suite "Utility Functions":
     test "getApplicableDowDate - West of 30W uses same day":
         let graticule: Graticule = Graticule(lat: 68, lon: -30)
         let date: DateTime = dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()) # Friday
-        let result = getApplicableDowDate(graticule, testDate)
-        check result == testDate
+        let result: DateTime = getApplicableDowDate(graticule, date)
+        check result == date
 
 
     test "getApplicableDowDate - East of 30W uses previous day":
         let graticule = Graticule(lat: 68, lon: -29)
         let date: DateTime = dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()) # Friday
-        let result = getApplicableDowDate(graticule, testDate)
-        check result == (testDate - 1.days) # Should be prev day
+        let result: DateTime = getApplicableDowDate(graticule, date)
+        check result == (date - 1.days) # Should be prev day
 
 
     test "getApplicableDowDate - West of 30W uses same day - 2008-05-26 and earlier":
         let graticule = Graticule(lat: 68, lon: -30)
         let date: DateTime = dateTime(2007, mApr, 13, 0, 0, 0, 0, utc()) # Friday
-        let result = getApplicableDowDate(graticule, testDate)
-        check result == testDate
+        let result: DateTime = getApplicableDowDate(graticule, date)
+        check result == date
 
     test "getApplicableDowDate - East of 30W uses same day - 2008-05-26 and earlier":
         let graticule = Graticule(lat: 68, lon: -29)
         let date: DateTime = dateTime(2007, mApr, 13, 0, 0, 0, 0, utc()) # Friday
-        let result = getApplicableDowDate(graticule, testDate)
-        check result == testDate
+        let result: DateTime = getApplicableDowDate(graticule, date)
+        check result == date
 
 
 suite "Mock Dow Provider":
@@ -134,13 +134,43 @@ suite "Dow Jones Data Provider":
 
 suite "Geohash Algorithm Core":
     test "generateGeohashString - formatting":
-        skip()
+        let date: DateTime = dateTime(2025, mAug, 18, 0, 0, 0, 0, utc())
+        let price: float = 12345.67
+        let result: string = generateGeohashString(date, price)
+        check result == "2025-08-18-12345.67"
+    
+    test "generateGeohashString - formatting of price":
+        let date: DateTime = dateTime(2025, mAug, 18, 0, 0, 0, 0, utc())
+        let price: float = 12345.6
+        let result: string = generateGeohashString(date, price)
+        check result == "2025-08-18-12345.60"
 
     test "md5ToCoordinateOffsets - expected hash":
-        skip()
+        # Values from: https://geohashing.site/geohashing/The_Algorithm#Specification
+        let hashStr: string = "2005-05-26-10458.68"
+        let (latOffset, lonOffset): (float, float) = md5ToCoordinateOffsets(hashStr)
+        check abs(latOffset - 0.85771326770700234438) < 0.00000000001 # Seems like enougth precision
+        check abs(lonOffset - 0.54454306955928210562) < 0.00000000001
 
-    test "applyOffsetsToGraticule - concatenation":
-        skip()
+    test "applyOffsetsToGraticule - positive graticule":
+        let graticule = Graticule(lat: 68, lon: -30)
+        let latOffset: float = 0.85771326770700234438
+        let lonOffset: float = 0.54454306955928210562
+
+        let (finalLat, finalLon): (float, float) = applyOffsetsToGraticule(graticule, latOffset, lonOffset)
+
+        check abs(finalLat - 68.85771326770700234438) < GEO_TOLERANCE
+        check abs(finalLon - -30.54454306955928210562) < GEO_TOLERANCE
+
+    test "applyOffsetsToGraticule - negative graticule":
+        let graticule = Graticule(lat: -1, lon: -1)
+        let latOffset: float = 0.85771326770700234438
+        let lonOffset: float = 0.54454306955928210562
+
+        let (finalLat, finalLon): (float, float) = applyOffsetsToGraticule(graticule, latOffset, lonOffset)
+
+        check abs(finalLat - -1.85771326770700234438) < GEO_TOLERANCE
+        check abs(finalLon - -1.54454306955928210562) < GEO_TOLERANCE
 
 
 suite "Public API":
