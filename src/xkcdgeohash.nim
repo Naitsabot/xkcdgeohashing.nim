@@ -83,20 +83,8 @@ proc getApplicableDowDate(graticule: Graticule, targetDate: DateTime): DateTime 
     ## Determine the applicable Dow Jones opening date "DJOD"
     
     if graticule.lon >= -179 and graticule.lon <= -30:
-        # If the longitude is between -179 and -30 inclusive, 
-        # use the latest date up to and including GD on which 
-        # a Dow Jones opening price has been or will be published.
-        # (On weekends and Dow holidays, DJOD will be earlier than GD.)
-
-        # using date up to and including targetDate
         result = findLatestDowDate(targetDate)
     elif targetDate > dateTime(2008, mMay, 26):
-        # Otherwise (if the longitude is between -29 and +179 inclusive), 
-        # use the latest date up to and including one day before GD on 
-        # which a Dow Jones opening price has been or will be published. 
-        # (DJOD will always be at least one day earlier than GD.)
-
-        # using date up to and including (targetDate - 1 day)
         result = findLatestDowDate(targetDate - 1.days)
     else:
         result = findLatestDowDate(targetDate)

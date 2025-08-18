@@ -194,33 +194,40 @@ suite "Public API":
         check geohasher.dowProvider == mockProvider
 
     test "hash - expected results from known data":
-        let mockData: seq[(DateTime, float)] = @[(dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()), 12981.20)]
+        let mockData: seq[(DateTime, float)] = @[
+            (dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()), 12981.20), # Fri
+            (dateTime(2012, mFeb, 25, 0, 0, 0, 0, utc()), 12981.20), # Sat
+            (dateTime(2012, mFeb, 26, 0, 0, 0, 0, utc()), 12981.20) # Sun
+        ]
         let mockProvider: MockDowProvider = newMockDowProvider(mockData)
-        let geohasher: Geohasher = newGeohasher(68, -30, mockProvider)
-
-        let result: GeohashResult = geohasher.hash(dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()))
+        
+        let result: GeohashResult = xkcdgeohash(68.0, -29.0, dateTime(2012, mFeb, 26), mockProvider)
 
         check abs(result.latitude - 68.000047) < GEO_TOLERANCE
-        check abs(result.longitude - -30.483719) < GEO_TOLERANCE
+        check abs(result.longitude - -29.483719) < GEO_TOLERANCE
         check result.usedDowDate.format("yyyy-MM-dd") == "2012-02-24"
-        check result.usedDate.format("yyyy-MM-dd") == "2012-02-24"
+        check result.usedDate.format("yyyy-MM-dd") == "2012-02-26"
 
     test "hash - expected results with known data - xkcd comic":
         let mockData: seq[(DateTime, float)] = @[(dateTime(2005, mMay, 26), 10458.68)]
         let mockProvider: MockDowProvider = newMockDowProvider(mockData)
-        let geohasher: Geohasher = newGeohasher(68, -30, mockProvider)
+        let geohasher: Geohasher = newGeohasher(37, -122, mockProvider)
         
         let result: GeohashResult = geohasher.hash(dateTime(2005, mMay, 26))
         
-        check abs(result.latitude - 68.8577) < GEO_TOLERANCE
-        check abs(result.longitude - (-30.5449)) < GEO_TOLERANCE
+        check abs(result.latitude - 37.857713) < GEO_TOLERANCE
+        check abs(result.longitude - -122.544544) < GEO_TOLERANCE
         check result.usedDowDate.format("yyyy-MM-dd") == "2005-05-26"
 
     test "xkcdgeohash - exprected results":
-        let mockData: seq[(DateTime, float)] = @[(dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()), 12981.20)]
+        let mockData: seq[(DateTime, float)] = @[
+            (dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()), 12981.20), # Fri
+            (dateTime(2012, mFeb, 25, 0, 0, 0, 0, utc()), 12981.20), # Sat
+            (dateTime(2012, mFeb, 26, 0, 0, 0, 0, utc()), 12981.20) # Sun
+        ]
         let mockProvider: MockDowProvider = newMockDowProvider(mockData)
         
-        let result: GeohashResult = xkcdgeohash(68.0, -30.0, dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()), mockProvider)
+        let result: GeohashResult = xkcdgeohash(68.0, -30.0, dateTime(2012, mFeb, 26, 0, 0, 0, 0, utc()), mockProvider)
         
         check abs(result.latitude - 68.000047) < GEO_TOLERANCE
         check abs(result.longitude - -30.483719) < GEO_TOLERANCE
