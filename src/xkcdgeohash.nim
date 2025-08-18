@@ -474,6 +474,24 @@ proc applyOffsetsToGraticule(graticule: Graticule, latitudeOffset: float, longit
 
 
 proc newGeohasher*(latitude: int, longitude: int, dowProvider: DowJonesProvider = getDefaultDowProvider()): Geohasher =
+    # Create a new Geohasher for the specified graticule.
+    ##
+    ## **Parameters:**
+    ## - `latitude`: Integer latitude of the target graticule (-90 to +90)
+    ## - `longitude`: Integer longitude of the target graticule (-179 to +179)
+    ## - `dowProvider`: Optional custom Dow Jones data provider
+    ##
+    ## **Returns:** Configured Geohasher ready for coordinate calculations
+    ##
+    ## Example:
+    ## ```nim
+    ## # Skanderborg area with default provider
+    ## let geohasher = newGeohasher(56, 9)
+    ##
+    ## # Berlin with custom provider
+    ## let customProvider = getDefaultDowProvider()
+    ## let berlinHasher = newGeohasher(52, 13, customProvider)
+    ## ```
     return Geohasher(
         graticule: Graticule(lat: latitude, lon: longitude),
         dowProvider: dowProvider
@@ -481,6 +499,31 @@ proc newGeohasher*(latitude: int, longitude: int, dowProvider: DowJonesProvider 
 
 
 proc hash*(geohasher: Geohasher, date: Datetime): GeohashResult =
+    ## Calculate geohash coordinates for the specified date.
+    ##
+    ## Performs the complete geohashing algorithm:
+    ## 1. Applies 30W timezone rule to determine Dow Jones date
+    ## 2. Retrieves Dow Jones opening price
+    ## 3. Generates and hashes the date-price string
+    ## 4. Converts hash to coordinate offsets
+    ## 5. Applies offsets to the graticule
+    ## 
+    ## **Parameters:**
+    ## - `geohasher`: Configured Geohasher instance
+    ## - `date`: Target date for coordinate calculation
+    ##
+    ## **Returns:** GeohashResult with coordinates and metadata
+    ##
+    ## **Raises:** `DowDataError` if Dow Jones data cannot be retrieved
+    ##
+    ## Example:
+    ## ```nim
+    ## let geohasher = newGeohasher(56, 9)
+    ## let result = geohasher.hash(now())
+    ## 
+    ## echo "Today's coordinates: ", result.latitude, ", ", result.longitude
+    ## echo "Used Dow date: ", result.usedDowDate.format("yyyy-MM-dd")
+    ## ```
     let dowDate: Datetime = getApplicableDowDate(geohasher.graticule, date)
     let dowPrice: float = geohasher.dowProvider.getDowPrice(dowDate)
     let hashStr: string = generateGeohashString(date, dowPrice)
@@ -496,6 +539,34 @@ proc hash*(geohasher: Geohasher, date: Datetime): GeohashResult =
 
 
 proc xkcdgeohash*(latitude: float, longitude: float, date: DateTime, dowProvider: DowJonesProvider = getDefaultDowProvider()): GeohashResult =
+    ## Calculate geohash coordinates using the functional API.
+    ##
+    ## This is a convenience function for one-off geohash calculations.
+    ## It automatically creates a graticule from the provided coordinates
+    ## and performs the complete geohashing algorithm.
+    ## 
+    ## **Parameters:**
+    ## - `latitude`: Target latitude (will be truncated to integer for graticule)
+    ## - `longitude`: Target longitude (will be truncated to integer for graticule)  
+    ## - `date`: Date for coordinate calculation
+    ## - `dowProvider`: Optional custom Dow Jones data provider
+    ##
+    ## **Returns:** GeohashResult with calculated coordinates and metadata
+    ##
+    ## **Raises:** `DowDataError` if Dow Jones data cannot be retrieved
+    ##
+    ## Example:
+    ## ```nim
+    ## # Simple calculation for today
+    ## let result = xkcdgeohash(45.5, -93.7, now())
+    ## 
+    ## # Specific date with error handling
+    ## try:
+    ##     let coords = xkcdgeohash(52.0, 13.0, dateTime(2008, mMay, 21))
+    ##     echo "Coordinates: ", coords.latitude, ", ", coords.longitude
+    ## except DowDataError as e:
+    ##     echo "Failed to get data: ", e.msg
+    ## ```
     let graticule: Graticule = Graticule(lat: int(latitude), lon: int(longitude))
     let geohasher: Geohasher = Geohasher(graticule: graticule, dowProvider: dowProvider)
     return geohasher.hash(date)
