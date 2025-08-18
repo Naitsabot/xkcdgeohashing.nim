@@ -1,7 +1,29 @@
 # xkcdgeohashing.nim
 Nim implementation for the geohashing algorithm described in xkcd #426. The algorithm is also described on the Geohashing wiki.
 
+# Compiling
+As a task:
+```
+nimble build
+```
+
+With nim compiler:
+```
+nim c src/xkcdgeohash.nim
+```
+
+Compiling and running:
+```
+nim c -r src/xkcdgeohash.nim
+```
+
+Compiling release mode:
+```
+nim c -d:release src/xkcdgeohash.nim
+```
+
 # Testing
+As a task:
 ```
 nimble test
 ```
