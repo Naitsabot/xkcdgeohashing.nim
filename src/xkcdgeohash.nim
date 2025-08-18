@@ -571,6 +571,30 @@ proc xkcdgeohash*(latitude: float, longitude: float, date: DateTime, dowProvider
 
 
 proc xkcdglobalgeohash*(date: DateTime, dowProvider: DowJonesProvider = getDefaultDowProvider()): GeohashResult =
+    ## Calculate globaL geohash coordinates using the functional API.
+    ##
+    ## It performs the complete geohashing algorithm and relates them to a point on the globe.
+    ## 
+    ## **Parameters:**
+    ## - `date`: Date for coordinate calculation
+    ## - `dowProvider`: Optional custom Dow Jones data provider
+    ##
+    ## **Returns:** GeohashResult with calculated coordinates and metadata
+    ##
+    ## **Raises:** `DowDataError` if Dow Jones data cannot be retrieved
+    ##
+    ## Example:
+    ## ```nim
+    ## # Simple calculation for today
+    ## let result = xkcdglobalgeohash(now())
+    ## 
+    ## # Specific date with error handling
+    ## try:
+    ##     let coords = xkcdglobalgeohash(dateTime(2008, mMay, 21))
+    ##     echo "Coordinates: ", coords.latitude, ", ", coords.longitude
+    ## except DowDataError as e:
+    ##     echo "Failed to get data: ", e.msg
+    ## ```
     let graticule: Graticule = Graticule(lat: 0, lon: 0)
     let geohasher: Geohasher = Geohasher(graticule: graticule, dowProvider: dowProvider)
     result = geohasher.hash(date)
