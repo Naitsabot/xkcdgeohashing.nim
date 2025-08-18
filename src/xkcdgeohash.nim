@@ -165,7 +165,7 @@ proc generateGeohashString(date: Datetime, dowPrice: float): string =
     # For example: "2005-05-26-10458.68"
 
     let dateStr: string = date.format("yyyy-MM-dd")
-    let priceStr: string = dowPrice.formatFloat(format = ffDecimal, precision = 2) # formats floats to two decimals
+    let priceStr: string = dowPrice.formatFloat(format = ffDecimal, precision = 2)
     return datestr & "-" & priceStr # Nim Strings are UTF-8 by default
 
 
@@ -206,7 +206,6 @@ proc applyOffsetsToGraticule(graticule: Graticule, latitudeOffset: float, longit
 # PUBLIC API
 # =============================================================================
 
-# Object-oriented API
 
 proc newGeohasher*(latitude: int, longitude: int, dowProvider: DowJonesProvider = getDefaultDowProvider()): Geohasher =
     return Geohasher(
@@ -229,7 +228,6 @@ proc hash*(geohasher: Geohasher, date: Datetime): GeohashResult =
         usedDate: date
     )
 
-# Functional API
 
 proc xkcdgeohash*(latitude: float, longitude: float, date: DateTime, dowProvider: DowJonesProvider = getDefaultDowProvider()): GeohashResult =
     let graticule: Graticule = Graticule(lat: int(latitude), lon: int(longitude))
