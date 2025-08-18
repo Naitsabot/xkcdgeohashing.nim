@@ -409,22 +409,33 @@ method getDowPrice(provider: HttpDowProvider, date: Datetime): float =
 
 
 proc generateGeohashString(date: Datetime, dowPrice: float): string =
-    # Form a string by concatenating GD (in YYYY-MM-DD format), 
-    # a hyphen "-", and the applicable opening price. 
-    # For example: "2005-05-26-10458.68"
-
+    ## Generate the hash input string from date and Dow Jones price.
+    ##
+    ## Combines the date (in YYYY-MM-DD format) and price (formatted to
+    ## 2 decimal places) into the string that will be MD5 hashed.
+    ## For example: "2005-05-26-10458.68"
+    ##
+    ## **Parameters:**
+    ## - `date`: The applicable Dow Jones date
+    ## - `dowPrice`: The Dow Jones opening price
+    ##
+    ## **Returns:** String in format "YYYY-MM-DD-NNNN.NN"
     let dateStr: string = date.format("yyyy-MM-dd")
     let priceStr: string = dowPrice.formatFloat(format = ffDecimal, precision = 2)
     return datestr & "-" & priceStr # Nim Strings are UTF-8 by default
 
 
 proc md5ToCoordinateOffsets(hashStr: string): (float, float) =
-    # Pass this string through the MD5 cryptographic algorithm to 
-    # generate an MD5 hash of 32 hexadecimal digits.
-    # Split the hash into two halves of 16 hexadecimal digits each.
-    # Prepend a decimal point before each half, 
-    # forming a hexadecimal number between 0 and 1. (Example: 0.db9318c2259923d0)
-    # Convert each half to decimal. (Example: 0.857713267707002344)
+    ## Convert MD5 hash string to coordinate offsets.
+    ##
+    ## Takes the geohash input string, calculates its MD5 hash,
+    ## splits it into two 16-character halves, and converts each
+    ## half to a decimal number between 0 and 1.
+    ##
+    ## **Parameters:**
+    ## - `hashStr`: Input string to be hashed (e.g., "2005-05-26-10458.68")
+    ##
+    ## **Returns:** Tuple of (latitude_offset, longitude_offset), both floats
     
     # https://nim-lang.org/docs/md5.html
     let hash: string = getMD5(hashStr)
@@ -439,12 +450,18 @@ proc md5ToCoordinateOffsets(hashStr: string): (float, float) =
 
 
 proc applyOffsetsToGraticule(graticule: Graticule, latitudeOffset: float, longitudeOffset: float): (float, float) =
-    # Append the first decimal number formed, without the leading 0, to the graticule's 
-    # latitude to form the geohash latitude. (Note this is a string operation: appending 
-    # 0.8577 to longitude -1 yields -1.8577)
-    # Similarly, append the second decimal number formed to the graticule's longitude to 
-    # form the geohash longitude.
-
+    ## Apply coordinate offsets to a graticule using string concatenation.
+    ##
+    ## This implements the specific string-based coordinate calculation
+    ## specified in the geohashing algorithm, where the decimal part of
+    ## the offset is appended to the integer graticule coordinates.
+    ##
+    ## **Parameters:**
+    ## - `graticule`: The target graticule (integer coordinates)
+    ## - `latitudeOffset`: Latitude offset between 0.0 and 1.0
+    ## - `longitudeOffset`: Longitude offset between 0.0 and 1.0
+    ##
+    ## **Returns:** Final (latitude, longitude) coordinates, both floats
     let latitudeStr: string = $graticule.lat & "." & ($latitudeOffset)[2..^1]
     let longitudeStr: string = $graticule.lon & "." & ($longitudeOffset)[2..^1]
     
