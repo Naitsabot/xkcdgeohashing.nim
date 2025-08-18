@@ -570,6 +570,15 @@ proc xkcdgeohash*(latitude: float, longitude: float, date: DateTime, dowProvider
     return geohasher.hash(date)
 
 
+proc xkcdglobalgeohash*(date: DateTime, dowProvider: DowJonesProvider = getDefaultDowProvider()): GeohashResult =
+    let graticule: Graticule = Graticule(lat: 0, lon: 0)
+    let geohasher: Geohasher = Geohasher(graticule: graticule, dowProvider: dowProvider)
+    result = geohasher.hash(date)
+
+    result.latitude = result.latitude * 180 - 90
+    result.longitude = result.longitude * 360 - 180
+    
+
 # =============================================================================
 # MAIN MODULE TEST
 # =============================================================================
