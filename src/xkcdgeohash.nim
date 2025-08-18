@@ -142,7 +142,7 @@ type
         ## 
         ## **Example:**
         ## ```nim
-        ## let Skanderborg: Graticule = Graticule(lat: 56, lon: 9)
+        ## let skanderborg: Graticule = Graticule(lat: 56, lon: 9)
         ## let minneapolis: Graticule = Graticule(lat: 45, lon: -93)
         ## let berlin: Graticule = Graticule(lat: 52, lon: 13)
         ## ```
