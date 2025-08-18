@@ -177,8 +177,6 @@ type
         ## let coords1 = geohasher.hash(now())
         ## let coords2 = geohasher.hash(now() - 1.days)
         ## ```
-        ## 
-        ## See also: `proc hash()`
         graticule*: Graticule ## Target graticule for calculations
         dowProvider*: DowJonesProvider  # Data source for Dow Jones prices (strategy pattern)
     
