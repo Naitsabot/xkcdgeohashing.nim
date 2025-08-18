@@ -7,7 +7,3 @@ nimble test
 ```
 
 Includes tests for the based 30W timezone rule found on the Geohashing wiki:: https://geohashing.site/geohashing/30W_Time_Zone_Rule
-
-
-
-
