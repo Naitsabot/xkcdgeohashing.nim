@@ -22,7 +22,6 @@ import xkcdgeohash
 const GEO_TOLERANCE: float64 = 0.000005
 
 
-
 # Mock Dow Jones Provider
 
 type MockDowProvider = ref object of DowJonesProvider
