@@ -580,7 +580,7 @@ proc xkcdglobalgeohash*(date: DateTime, dowProvider: DowJonesProvider = getDefau
     
 
 # =============================================================================
-# MAIN MODULE TEST
+# MAIN MODULE
 # =============================================================================
 
 
