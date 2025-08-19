@@ -179,6 +179,11 @@ type
         ## ```
         graticule*: Graticule ## Target graticule for calculations
         dowProvider*: DowJonesProvider  # Data source for Dow Jones prices (strategy pattern)
+
+    GlobalGeohasher* = object
+        ## Container for global geohashing operations with configured data source.
+        dowProvider*: DowJonesProvider  # Data source for Dow Jones prices (strategy pattern)
+        
     
     DowJonesProvider* = ref object of RootObj
         ## Strategy Interface: Abstract base type for Dow Jones data providers.
@@ -472,7 +477,7 @@ proc applyOffsetsToGraticule(graticule: Graticule, latitudeOffset: float, longit
 
 
 proc newGeohasher*(latitude: int, longitude: int, dowProvider: DowJonesProvider = getDefaultDowProvider()): Geohasher =
-    # Create a new Geohasher for the specified graticule.
+    ## Create a new Geohasher for the specified graticule.
     ##
     ## **Parameters:**
     ## - `latitude`: Integer latitude of the target graticule (-90 to +90)
@@ -492,6 +497,18 @@ proc newGeohasher*(latitude: int, longitude: int, dowProvider: DowJonesProvider 
     ## ```
     return Geohasher(
         graticule: Graticule(lat: latitude, lon: longitude),
+        dowProvider: dowProvider
+    )
+
+
+proc newGlobalGeohasher*(dowProvider: DowJonesProvider = getDefaultDowProvider()): GlobalGeohasher =
+    ## Create a new Geohasher for the specified graticule.
+    ## 
+    ## **Parameters:**
+    ## - `dowProvider`: Optional custom Dow Jones data provider
+    ##
+    ## **Returns:** Configured Geohasher ready for coordinate calculations
+    return GlobalGeohasher(
         dowProvider: dowProvider
     )
 
@@ -531,6 +548,34 @@ proc hash*(geohasher: Geohasher, date: Datetime): GeohashResult =
     return GeohashResult(
         latitude: finalLatitude,
         longitude: finalLongitude,
+        usedDowDate: dowDate,
+        usedDate: date
+    )
+
+
+proc hash*(globalGeohasher: GlobalGeohasher, date: DateTime): GeohashResult =
+    ## Calculate the global geohash coordinates for the specified date.
+    ## 
+    ## **Parameters:**
+    ## - `globalGeohasher`: Configured GlobalGeohasher instance
+    ## - `date`: Target date for coordinate calculation
+    ##
+    ## **Returns:** GeohashResult with coordinates and metadata
+    ##
+    ## **Raises:** `DowDataError` if Dow Jones data cannot be retrieved
+    let zeroGraticule: Graticule = Graticule(lat: 0, lon: 0)
+    let dowDate: Datetime = getApplicableDowDate(zeroGraticule, date)
+    let dowPrice: float = globalGeohasher.dowProvider.getDowPrice(dowDate)
+    let hashStr: string = generateGeohashString(date, dowPrice)
+    let (latitudeOffset, longitudeOffset): (float, float) = md5ToCoordinateOffsets(hashStr)
+    let (finalLatitude, finalLongitude): (float, float) = applyOffsetsToGraticule(zeroGraticule, latitudeOffset, longitudeOffset)
+
+    let globalLatitude: float = finalLatitude * 180 - 90
+    let globalLongitude: float = finalLongitude * 360 - 180
+
+    return GeohashResult(
+        latitude: globalLatitude,
+        longitude: globalLongitude,
         usedDowDate: dowDate,
         usedDate: date
     )
@@ -595,12 +640,8 @@ proc xkcdglobalgeohash*(date: DateTime, dowProvider: DowJonesProvider = getDefau
     ## except DowDataError as e:
     ##     echo "Failed to get data: ", e.msg
     ## ```
-    let graticule: Graticule = Graticule(lat: 0, lon: 0)
-    let geohasher: Geohasher = Geohasher(graticule: graticule, dowProvider: dowProvider)
-    result = geohasher.hash(date)
-
-    result.latitude = result.latitude * 180 - 90
-    result.longitude = result.longitude * 360 - 180
+    let geohasher: GlobalGeohasher = GlobalGeohasher(dowProvider: dowProvider)
+    return geohasher.hash(date)
 
 
 # =============================================================================
