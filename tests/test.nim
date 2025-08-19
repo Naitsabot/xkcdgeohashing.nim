@@ -103,7 +103,12 @@ suite "Utility Functions":
         let date: DateTime = dateTime(2007, mApr, 13, 0, 0, 0, 0, utc()) # Friday
         let result: DateTime = getApplicableDowDate(graticule, date)
         check result == date
-
+    
+    test "getApplicableDowDateGlobal - always uses previous day":
+        let monday: DateTime = dateTime(2025, mAug, 19, 0, 0, 0, 0, utc())
+        let result: DateTime = getApplicableDowDateGlobal(monday)
+        check result == dateTime(2025, mAug, 18, 0, 0, 0, 0, utc())
+        
 
 suite "Mock Dow Provider":
     test "Create mock provider with test data":
@@ -191,8 +196,14 @@ suite "Public API":
         check geohasher.graticule.lat == 68
         check geohasher.graticule.lon == -30
         check geohasher.dowProvider == mockProvider
+    
+    test "newGlobalGeohasher - valid object instance":
+        let mockProvider: MockDowProvider = newMockDowProvider(@[(dateTime(2008, mMay, 20), 13026.04)])
+        let globalGeohasher: GlobalGeohasher = newGlobalGeohasher(mockProvider)
+        
+        check globalGeohasher.dowProvider == mockProvider
 
-    test "hash - expected results from known data":
+    test "Geohasher.hash - expected results from known data":
         let mockData: seq[(DateTime, float)] = @[
             (dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()), 12981.20), # Fri
             (dateTime(2012, mFeb, 25, 0, 0, 0, 0, utc()), 12981.20), # Sat
@@ -207,7 +218,7 @@ suite "Public API":
         check result.usedDowDate.format("yyyy-MM-dd") == "2012-02-24"
         check result.usedDate.format("yyyy-MM-dd") == "2012-02-26"
 
-    test "hash - expected results with known data - xkcd comic":
+    test "Geohasher.hash - expected results with known data - xkcd comic":
         let mockData: seq[(DateTime, float)] = @[(dateTime(2005, mMay, 26), 10458.68)]
         let mockProvider: MockDowProvider = newMockDowProvider(mockData)
         let geohasher: Geohasher = newGeohasher(37, -122, mockProvider)
@@ -217,6 +228,20 @@ suite "Public API":
         check abs(result.latitude - 37.857713) < GEO_TOLERANCE
         check abs(result.longitude - -122.544544) < GEO_TOLERANCE
         check result.usedDowDate.format("yyyy-MM-dd") == "2005-05-26"
+    
+    test "GlobalGeohasher.hash - expected results from known data":
+        let mockData: seq[(DateTime, float)] = @[
+            (dateTime(2008, mMay, 20, 0, 0, 0, 0, utc()), 13026.04)
+        ]
+        let mockProvider: MockDowProvider = newMockDowProvider(mockData)
+        let globalGeohasher: GlobalGeohasher = newGlobalGeohasher(mockProvider)
+        
+        let result: GeohashResult = globalGeohasher.hash(dateTime(2008, mMay, 21, 0, 0, 0, 0, utc()))
+        
+        check abs(result.latitude - 85.74626) < GEO_TOLERANCE
+        check abs(result.longitude - 146.18662) < GEO_TOLERANCE
+        check result.usedDate.format("yyyy-MM-dd") == "2008-05-21"
+        check result.usedDowDate.format("yyyy-MM-dd") == "2008-05-20"
 
     test "xkcdgeohash - exprected results":
         let mockData: seq[(DateTime, float)] = @[
@@ -250,6 +275,18 @@ suite "Public API":
         
         check result.usedDowDate.format("yyyy-MM-dd") == "2025-08-18"  # Previous day
         check result.usedDate.format("yyyy-MM-dd") == "2025-08-19"
+    
+    test "xkcdglobalgeohash - expected results":
+        let mockData: seq[(DateTime, float)] = @[
+            (dateTime(2008, mMay, 20, 0, 0, 0, 0, utc()), 13026.04)
+        ]
+        let mockProvider: MockDowProvider = newMockDowProvider(mockData)
+        
+        let result: GeohashResult = xkcdglobalgeohash(dateTime(2008, mMay, 21, 0, 0, 0, 0, utc()), mockProvider)
+        
+        check abs(result.latitude - 85.74626) < GEO_TOLERANCE
+        check abs(result.longitude - 146.18662) < GEO_TOLERANCE
+
 
 # https://geohashing.site/geohashing/30W_Time_Zone_Rule#Testing_for_30W_compliance
 suite "Official Test for 30W Time Zone Rule":

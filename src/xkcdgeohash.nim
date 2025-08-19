@@ -762,5 +762,5 @@ when isMainModule:
     # TODO: add cmd parsing
 
 when defined(test):
-    export parseHexFloat, findLatestDowDate, getApplicableDowDate, 
+    export parseHexFloat, findLatestDowDate, getApplicableDowDate, getApplicableDowDateGlobal,
            generateGeohashString, md5ToCoordinateOffsets, applyOffsetsToGraticule
