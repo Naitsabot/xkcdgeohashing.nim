@@ -316,7 +316,6 @@ proc getApplicableDowDate(graticule: Graticule, targetDate: DateTime): DateTime 
     ## - From 2008-05-27 onwards:
     ##   - West of 30W longitude: Use same day
     ##   - East of 30W longitude: Use previous day
-    ## - Global Geohash (any longitude and date): Use previous day (TODO)
     ##
     ## **Parameters:**
     ## - `graticule`: Target graticule containing longitude for rule application
@@ -331,6 +330,21 @@ proc getApplicableDowDate(graticule: Graticule, targetDate: DateTime): DateTime 
     else:
         result = findLatestDowDate(targetDate)
     return
+
+
+proc getApplicableDowDateGlobal(targetDate: DateTime): DateTime =
+    ## Determine the applicable Dow Jones opening date "DJOD" according to
+    ## the global 30W timezone rule.
+    ## 
+    ## **Rules:**
+    ## - Global Geohash (any longitude and date): Use previous day
+    ##
+    ## **Parameters:**
+    ## - `targetDate`: The date for which to calculate geohash
+    ##
+    ## **Returns:** The date whose Dow Jones price should be used
+
+    return findLatestDowDate(targetDate - 1.days)
 
 
 # =============================================================================
@@ -594,7 +608,7 @@ proc hash*(globalGeohasher: GlobalGeohasher, date: DateTime): GeohashResult =
     ##
     ## **Raises:** `DowDataError` if Dow Jones data cannot be retrieved
     let zeroGraticule: Graticule = Graticule(lat: 0, lon: 0)
-    let dowDate: Datetime = getApplicableDowDate(zeroGraticule, date)
+    let dowDate: Datetime = getApplicableDowDateGlobal(date)
     let dowPrice: float = globalGeohasher.dowProvider.getDowPrice(dowDate)
     let hashStr: string = generateGeohashString(date, dowPrice)
     let (latitudeOffset, longitudeOffset): (float, float) = md5ToCoordinateOffsets(hashStr)
