@@ -601,7 +601,74 @@ proc xkcdglobalgeohash*(date: DateTime, dowProvider: DowJonesProvider = getDefau
 
     result.latitude = result.latitude * 180 - 90
     result.longitude = result.longitude * 360 - 180
-    
+
+
+# =============================================================================
+# OPERATOR OVERLOADS
+# =============================================================================
+
+
+proc `$`*(graticule: Graticule): string =
+    ## Convert Graticule to string representation.
+    return "(" & $graticule.lat & ", " & $graticule.lon & ")"
+
+
+proc `$`*(geohashResult: GeohashResult): string =
+    ## Convert GeohashResult to string representation.
+    return "GeohashResult(lat: " & $geohashResult.latitude & 
+        ", lon: " & $geohashResult.longitude & 
+        ", usedDate: " & geohashResult.usedDate.format("yyyy-MM-dd") &
+        ", usedDowDate: " & geohashResult.usedDowDate.format("yyyy-MM-dd") & ")"
+
+
+proc `$`*(geohasher: Geohasher): string =
+    ## Convert Geohasher to string representation.
+    return "Geohasher(" & $geohasher.graticule & ")"
+
+
+proc `==`*(a, b: Graticule): bool =
+    ## Check equality between two Graticule objects.
+    return a.lat == b.lat and a.lon == b.lon
+
+
+proc `==`*(a, b: GeohashResult): bool =
+    ## Check equality between two GeohashResult objects.
+    return a.latitude == b.latitude and 
+           a.longitude == b.longitude and
+           a.usedDate == b.usedDate and
+           a.usedDowDate == b.usedDowDate
+
+
+proc `==`*(a, b: Geohasher): bool =
+    ## Check equality between two Geohasher objects.
+    return a.graticule == b.graticule
+
+
+proc `<`*(a, b: Graticule): bool =
+    ## Compare Graticule objects for ordering (latitude first, then longitude).
+    if a.lat != b.lat:
+        return a.lat < b.lat
+    return a.lon < b.lon
+
+
+proc `<=`*(a, b: Graticule): bool =
+    ## Check if Graticule a is less than or equal to b.
+    return a == b or a < b
+
+
+proc `<`*(a, b: GeohashResult): bool =
+    ## Compare GeohashResult objects for ordering (date first, then coordinates).
+    if a.usedDate != b.usedDate:
+        return a.usedDate < b.usedDate
+    if a.latitude != b.latitude:
+        return a.latitude < b.latitude
+    return a.longitude < b.longitude
+
+
+proc `<=`*(a, b: GeohashResult): bool =
+    ## Check if GeohashResult a is less than or equal to b.
+    return a == b or a < b
+
 
 # =============================================================================
 # MAIN MODULE
