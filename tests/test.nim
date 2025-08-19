@@ -286,7 +286,6 @@ suite "Official Test for 30W Time Zone Rule":
         let dowProvider: MockDowProvider = newMockDowProvider(mockData)
 
         for i in 0 .. (mockData.len - 1):
-
             let date: Datetime = mockData[i][0]
 
             let westGeohasher: Geohasher = newGeohasher(68, -30, dowProvider)
@@ -327,7 +326,6 @@ suite "Official Test for 30W Time Zone Rule":
         let dowProvider = newMockDowProvider(mockData)
 
         for i in 0 .. (mockData.len - 2):
-
             let date: Datetime = mockData[1 + i][0]
 
             let westGeohasher: Geohasher = newGeohasher(68, -30, dowProvider)
@@ -345,6 +343,45 @@ suite "Official Test for 30W Time Zone Rule":
 
             check abs(westResult.longitude - westExpected[i][1]) < GEO_TOLERANCE
             check abs(eastResult.longitude - eastExpected[i][1]) < GEO_TOLERANCE
+    
+    test "Global - 2008-05-21 to 2008-05-30 (2008-05-20 excluded)":
+        let expected: seq[(float, float)] = @[
+            (85.74626, 146.18662), # 2008-05-21
+            (61.62927, 69.96869),
+            (78.42559, 129.50128),
+            (-67.20336, 17.11192),
+            (79.51947, -114.16550),
+            (31.16306, 38.63088),
+            (-67.43391, 27.75993),
+            (37.87947, -139.41640),
+            (-39.90121, 86.81114),
+            (-31.91030, 73.65004),
+        ] 
+
+        let mockData: seq[(DateTime, float)] = @[
+            (dateTime(2008, mMay, 20, 0, 0, 0, 0, utc()), 13026.04), # Needed for 2008-05-21 as prev day
+            (dateTime(2008, mMay, 21, 0, 0, 0, 0, utc()), 12824.94),
+            (dateTime(2008, mMay, 22, 0, 0, 0, 0, utc()), 12597.69),
+            (dateTime(2008, mMay, 23, 0, 0, 0, 0, utc()), 12620.90),
+            (dateTime(2008, mMay, 24, 0, 0, 0, 0, utc()), 12620.90),
+            (dateTime(2008, mMay, 25, 0, 0, 0, 0, utc()), 12620.90),
+            (dateTime(2008, mMay, 26, 0, 0, 0, 0, utc()), 12620.90),
+            (dateTime(2008, mMay, 27, 0, 0, 0, 0, utc()), 12479.63),
+            (dateTime(2008, mMay, 28, 0, 0, 0, 0, utc()), 12542.90),
+            (dateTime(2008, mMay, 29, 0, 0, 0, 0, utc()), 12593.87),
+            (dateTime(2008, mMay, 30, 0, 0, 0, 0, utc()), 12647.36),
+        ]
+        let dowProvider = newMockDowProvider(mockData)
+
+        for i in 0 .. (mockData.len - 2):
+            let date: Datetime = mockData[1 + i][0]
+
+            let globalGeohasher: GlobalGeohasher = newGlobalGeohasher(dowProvider)
+
+            let result: GeohashResult = globalGeohasher.hash(date)
+
+            check abs(result.latitude - expected[i][0]) < GEO_TOLERANCE
+            check abs(result.longitude - expected[i][1]) < GEO_TOLERANCE
 
 
 # https://geohashing.site/geohashing/30W_Time_Zone_Rule#Testing_for_the_scientific_notation_bug
@@ -370,6 +407,23 @@ suite "Official Test for The Scientific Notation Bug":
 
         check abs(westResult.longitude - -30.483719) < GEO_TOLERANCE
         check abs(eastResult.longitude - -29.483719) < GEO_TOLERANCE
+    
+    test "Global - 2012-02-26 coordinates testdata edge case":
+        let mockData: seq[(DateTime, float)] = @[
+            (dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()), 12981.20), # Fri
+            (dateTime(2012, mFeb, 25, 0, 0, 0, 0, utc()), 12981.20), # Sat
+            (dateTime(2012, mFeb, 26, 0, 0, 0, 0, utc()), 12981.20) # Sun
+        ]
+        let dowProvider: MockDowProvider = newMockDowProvider(mockData)
+
+        let date: Datetime = dateTime(2012, mFeb, 26, 0, 0, 0, 0, utc())
+
+        let globalGeohasher: GlobalGeohasher = newGlobalGeohasher(dowProvider)
+
+        let result: GeohashResult = globalGeohasher.hash(date)
+
+        check abs(result.latitude - -89.99161) < GEO_TOLERANCE
+        check abs(result.longitude - -5.86128) < GEO_TOLERANCE
 
 
 echo ""
