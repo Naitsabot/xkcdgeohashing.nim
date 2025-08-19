@@ -164,7 +164,6 @@ import checksums/md5
 
 
 type
-    
     Graticule* = object
         ## Represents a graticule (integer coordinate area) for geohashing.
         ## 
