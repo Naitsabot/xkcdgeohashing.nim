@@ -463,4 +463,9 @@ suite "Official Test for The Scientific Notation Bug":
         check abs(result.longitude - -5.86128) < GEO_TOLERANCE
 
 
+suite "Operator Overloads":
+    test "1":
+        skip()
+
+
 echo ""
