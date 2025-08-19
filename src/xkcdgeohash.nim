@@ -399,7 +399,7 @@ proc fetchFromSource(source: string, date: Datetime): float =
 method getDowPrice*(provider: DowJonesProvider, date: DateTime): float {.base.} =
     ## Retrieve the Dow Jones Industrial Average opening price for a specific date.
     ##
-    ## **Base method** - must be implemented by concrete provider types.
+    ## **Base method** - must be implemented by concrete provider types. 
     ##
     ## **Parameters:**
     ## - `provider`: The data provider instance
