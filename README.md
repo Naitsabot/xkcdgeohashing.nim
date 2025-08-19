@@ -42,6 +42,7 @@ Algorithm spec can be seen at: https://geohashing.site/geohashing/The_Algorithm
 
 Copyright (c) 2025 Sebastian H. Lorenzen
 Licensed under MIT License
+
 ## Quick Start
 
 ```nim
@@ -55,6 +56,10 @@ echo "Coordinates: ", result.latitude, ", ", result.longitude
 # Object-oriented API for repeated calculations
 let geohasher: Geohasher = newGeohasher(68, -30)
 let coords: GeohashResult = geohasher.hash(now())
+
+# Global geohash calculation
+let globalCoords: GeohashResult = xkcdglobalgeohash(now())
+echo "Global coordinates: ", globalCoords.latitude, ", ", globalCoords.longitude
 ```
 
 Per Default the Library tries to fetch data from the following sources via a http-client:
@@ -84,12 +89,16 @@ let customProvider: HttpDowProvider = getDefaultDowProvider()
 let customGeohasher: Geohasher = newGeohasher(45, -93, customProvider)
 
 let yeasteryeasterday: GeohashResult = geohasher.hash(now() - 2.days)
+
+# Global geohash with OO API
+let globalGeohasher: GlobalGeohasher = newGlobalGeohasher()
+let globalResult: GeohashResult = globalGeohasher.hash(now())
 ```
 
 
 ## **Functional API**:
 
-Simple, stateless way to calculate geohashes for one-off calculations. 
+Simple, stateless way to calculate geohashes for one-off calculations.
 It automatically handles Dow Jones data fetching and applies the 30W timezone rule.
 Dow Jones Provider can be changed, per default `HttpDowProvider` is used.
 
@@ -100,6 +109,10 @@ let result = xkcdgeohash(45.0, -93.0, dateTime(2008, mMay, 21))
 echo "Latitude: ", result.latitude
 echo "Longitude: ", result.longitude
 echo "Used Dow date: ", result.usedDowDate.format("yyyy-MM-dd")
+
+# Calculate global geohash for a specific date
+let globalResult = xkcdglobalgeohash(dateTime(2008, mMay, 21))
+echo "Global coordinates: ", globalResult.latitude, ", ", globalResult.longitude
 ```
 
 
@@ -119,12 +132,27 @@ The algorithm implements the 30W timezone rule:
 See also: https://geohashing.site/geohashing/30W_Time_Zone_Rule#30W_compliance_confusion_matrix
 
 
+## **Global Geohashing**
+
+Global geohashes provide a single worldwide coordinate for each date, covering the entire globe.
+Unlike regular geohashes which are constrained to 1x1 degree graticules, global geohashes
+can land anywhere on Earth.
+
+```nim
+# Functional API (recommended for most use cases)
+let globalCoords = xkcdglobalgeohash(now())
+echo "Today's global meetup: ", globalCoords.latitude, ", ", globalCoords.longitude
+
+# Object-oriented API for repeated calculations
+let globalGeohasher = newGlobalGeohasher()
+let coords1 = globalGeohasher.hash(now())
+let coords2 = globalGeohasher.hash(now() - 1.days)
+```
 ## **Error Handling**
 
 The library defines spesific exceptions types for different error conditions:
 - `GeohashError`: Base exception type for the library
 - `DowDataError`: Thrown when Dow Jones data cannot be retrieved. Inherits from `GeohashError`
-
 
 
 ## **Custom Dow Jones Provider (djia)**
@@ -151,6 +179,7 @@ Then use it!
 ```nim
 let customProvider: MyCustomProvider = newCustomProvider()
 let customGeohasher: Geohasher = newGeohasher(45, -93, customProvider)
+let customGlobalGeohasher: GlobalGeohasher = newGlobalGeohasher(customProvider)
 ```
 
 See the librarys testing for an implementation of a mock dow jones data provider.

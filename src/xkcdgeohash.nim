@@ -11,7 +11,7 @@
 ## Licensed under MIT License
 
 ## ## Quick Start
-## 
+##
 ## ```nim
 ## import xkcdgeohash
 ## import std/times
@@ -23,8 +23,12 @@
 ## # Object-oriented API for repeated calculations
 ## let geohasher: Geohasher = newGeohasher(68, -30)
 ## let coords: GeohashResult = geohasher.hash(now())
+##
+## # Global geohash calculation
+## let globalCoords: GeohashResult = xkcdglobalgeohash(now())
+## echo "Global coordinates: ", globalCoords.latitude, ", ", globalCoords.longitude
 ## ```
-## 
+##
 ## Per Default the Library tries to fetch data from the following sources via a http-client:
 ## - http://carabiner.peeron.com/xkcd/map/data/
 ## - http://geo.crox.net/djia/
@@ -33,12 +37,12 @@
 
 
 ## ## **Object Oriented API**:
-## 
+##
 ## Ideal when preforming multiple geohash calculations at the same graticule (integer coordinate area).
 ## Allows you to reuse setup.
 ## It automatically handles Dow Jones data fetching and applies the 30W timezone rule.
 ## Dow Jones Provider can be changed, per default `HttpDowProvider` is used.
-## 
+##
 ## ```nim
 ## # Create a geohasher for the Minneapolis area
 ## let geohasher: Geohasher = newGeohasher(45, -93)
@@ -46,35 +50,43 @@
 ## # Calculate coordinates for different dates
 ## let today: GeohashResult = geohasher.hash(now())
 ## let yesterday: GeohashResult = geohasher.hash(now() - 1.days)
-## 
+##
 ## # Use custom Dow Jones data source
 ## let customProvider: HttpDowProvider = getDefaultDowProvider()
 ## let customGeohasher: Geohasher = newGeohasher(45, -93, customProvider)
-## 
+##
 ## let yeasteryeasterday: GeohashResult = geohasher.hash(now() - 2.days)
+##
+## # Global geohash with OO API
+## let globalGeohasher: GlobalGeohasher = newGlobalGeohasher()
+## let globalResult: GeohashResult = globalGeohasher.hash(now())
 ## ```
 
 
 ## ## **Functional API**:
-## 
-## Simple, stateless way to calculate geohashes for one-off calculations. 
+##
+## Simple, stateless way to calculate geohashes for one-off calculations.
 ## It automatically handles Dow Jones data fetching and applies the 30W timezone rule.
 ## Dow Jones Provider can be changed, per default `HttpDowProvider` is used.
-## 
+##
 ## ```nim
 ## # Calculate geohash for specific coordinates and date
 ## let result = xkcdgeohash(45.0, -93.0, dateTime(2008, mMay, 21))
-## 
+##
 ## echo "Latitude: ", result.latitude
 ## echo "Longitude: ", result.longitude
 ## echo "Used Dow date: ", result.usedDowDate.format("yyyy-MM-dd")
+##
+## # Calculate global geohash for a specific date
+## let globalResult = xkcdglobalgeohash(dateTime(2008, mMay, 21))
+## echo "Global coordinates: ", globalResult.latitude, ", ", globalResult.longitude
 ## ```
 
 
 ## ## **Commandline Use**:
 ## 
 ## **TODO**: *Yet to be implemented*
-## 
+
 
 ## ## 30W Timezone Rule
 ##
@@ -87,40 +99,58 @@
 ## See also: https://geohashing.site/geohashing/30W_Time_Zone_Rule#30W_compliance_confusion_matrix
 
 
+## ## **Global Geohashing**
+##
+## Global geohashes provide a single worldwide coordinate for each date, covering the entire globe.
+## Unlike regular geohashes which are constrained to 1x1 degree graticules, global geohashes
+## can land anywhere on Earth.
+##
+## ```nim
+## # Functional API (recommended for most use cases)
+## let globalCoords = xkcdglobalgeohash(now())
+## echo "Today's global meetup: ", globalCoords.latitude, ", ", globalCoords.longitude
+##
+## # Object-oriented API for repeated calculations
+## let globalGeohasher = newGlobalGeohasher()
+## let coords1 = globalGeohasher.hash(now())
+## let coords2 = globalGeohasher.hash(now() - 1.days)
+## ```
+
+
 ## ## **Error Handling**
 ## 
 ## The library defines spesific exceptions types for different error conditions:
 ## - `GeohashError`: Base exception type for the library
 ## - `DowDataError`: Thrown when Dow Jones data cannot be retrieved. Inherits from `GeohashError`
-## 
 
 
 ## ## **Custom Dow Jones Provider (djia)**
-## 
+##
 ## You can implement you own Dow Jones data source provider by inheriting from the `DowJonesProvider`
 ## strategy interface:
-## 
+##
 ## ```nim
 ## type MyCustomProvider = ref object of DowJonesProvider
 ## ```
-## 
+##
 ## Then implement `getDowPrice` for your custom provider:
-## 
+##
 ## ```nim
 ## method getDowPrice(provider: MyCustomProvider, date: DateTime): float =
 ##     # Custom implementation here
 ##     return 12345.67
 ## ```
-## 
+##
 ## A constructor might also be good to have depending on how data found :)
-## 
+##
 ## Then use it!
-## 
+##
 ## ```nim
 ## let customProvider: MyCustomProvider = newCustomProvider()
 ## let customGeohasher: Geohasher = newGeohasher(45, -93, customProvider)
+## let customGlobalGeohasher: GlobalGeohasher = newGlobalGeohasher(customProvider)
 ## ```
-## 
+##
 ## See the librarys testing for an implementation of a mock dow jones data provider.
 
 
