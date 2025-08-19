@@ -11,7 +11,7 @@
 ## Licensed under MIT License
 
 ## ## Quick Start
-## 
+##
 ## ```nim
 ## import xkcdgeohash
 ## import std/times
@@ -23,8 +23,12 @@
 ## # Object-oriented API for repeated calculations
 ## let geohasher: Geohasher = newGeohasher(68, -30)
 ## let coords: GeohashResult = geohasher.hash(now())
+##
+## # Global geohash calculation
+## let globalCoords: GeohashResult = xkcdglobalgeohash(now())
+## echo "Global coordinates: ", globalCoords.latitude, ", ", globalCoords.longitude
 ## ```
-## 
+##
 ## Per Default the Library tries to fetch data from the following sources via a http-client:
 ## - http://carabiner.peeron.com/xkcd/map/data/
 ## - http://geo.crox.net/djia/
@@ -33,12 +37,12 @@
 
 
 ## ## **Object Oriented API**:
-## 
+##
 ## Ideal when preforming multiple geohash calculations at the same graticule (integer coordinate area).
 ## Allows you to reuse setup.
 ## It automatically handles Dow Jones data fetching and applies the 30W timezone rule.
 ## Dow Jones Provider can be changed, per default `HttpDowProvider` is used.
-## 
+##
 ## ```nim
 ## # Create a geohasher for the Minneapolis area
 ## let geohasher: Geohasher = newGeohasher(45, -93)
@@ -46,35 +50,43 @@
 ## # Calculate coordinates for different dates
 ## let today: GeohashResult = geohasher.hash(now())
 ## let yesterday: GeohashResult = geohasher.hash(now() - 1.days)
-## 
+##
 ## # Use custom Dow Jones data source
 ## let customProvider: HttpDowProvider = getDefaultDowProvider()
 ## let customGeohasher: Geohasher = newGeohasher(45, -93, customProvider)
-## 
+##
 ## let yeasteryeasterday: GeohashResult = geohasher.hash(now() - 2.days)
+##
+## # Global geohash with OO API
+## let globalGeohasher: GlobalGeohasher = newGlobalGeohasher()
+## let globalResult: GeohashResult = globalGeohasher.hash(now())
 ## ```
 
 
 ## ## **Functional API**:
-## 
-## Simple, stateless way to calculate geohashes for one-off calculations. 
+##
+## Simple, stateless way to calculate geohashes for one-off calculations.
 ## It automatically handles Dow Jones data fetching and applies the 30W timezone rule.
 ## Dow Jones Provider can be changed, per default `HttpDowProvider` is used.
-## 
+##
 ## ```nim
 ## # Calculate geohash for specific coordinates and date
 ## let result = xkcdgeohash(45.0, -93.0, dateTime(2008, mMay, 21))
-## 
+##
 ## echo "Latitude: ", result.latitude
 ## echo "Longitude: ", result.longitude
 ## echo "Used Dow date: ", result.usedDowDate.format("yyyy-MM-dd")
+##
+## # Calculate global geohash for a specific date
+## let globalResult = xkcdglobalgeohash(dateTime(2008, mMay, 21))
+## echo "Global coordinates: ", globalResult.latitude, ", ", globalResult.longitude
 ## ```
 
 
 ## ## **Commandline Use**:
 ## 
 ## **TODO**: *Yet to be implemented*
-## 
+
 
 ## ## 30W Timezone Rule
 ##
@@ -87,40 +99,58 @@
 ## See also: https://geohashing.site/geohashing/30W_Time_Zone_Rule#30W_compliance_confusion_matrix
 
 
+## ## **Global Geohashing**
+##
+## Global geohashes provide a single worldwide coordinate for each date, covering the entire globe.
+## Unlike regular geohashes which are constrained to 1x1 degree graticules, global geohashes
+## can land anywhere on Earth.
+##
+## ```nim
+## # Functional API (recommended for most use cases)
+## let globalCoords = xkcdglobalgeohash(now())
+## echo "Today's global meetup: ", globalCoords.latitude, ", ", globalCoords.longitude
+##
+## # Object-oriented API for repeated calculations
+## let globalGeohasher = newGlobalGeohasher()
+## let coords1 = globalGeohasher.hash(now())
+## let coords2 = globalGeohasher.hash(now() - 1.days)
+## ```
+
+
 ## ## **Error Handling**
 ## 
 ## The library defines spesific exceptions types for different error conditions:
 ## - `GeohashError`: Base exception type for the library
 ## - `DowDataError`: Thrown when Dow Jones data cannot be retrieved. Inherits from `GeohashError`
-## 
 
 
 ## ## **Custom Dow Jones Provider (djia)**
-## 
+##
 ## You can implement you own Dow Jones data source provider by inheriting from the `DowJonesProvider`
 ## strategy interface:
-## 
+##
 ## ```nim
 ## type MyCustomProvider = ref object of DowJonesProvider
 ## ```
-## 
+##
 ## Then implement `getDowPrice` for your custom provider:
-## 
+##
 ## ```nim
 ## method getDowPrice(provider: MyCustomProvider, date: DateTime): float =
 ##     # Custom implementation here
 ##     return 12345.67
 ## ```
-## 
+##
 ## A constructor might also be good to have depending on how data found :)
-## 
+##
 ## Then use it!
-## 
+##
 ## ```nim
 ## let customProvider: MyCustomProvider = newCustomProvider()
 ## let customGeohasher: Geohasher = newGeohasher(45, -93, customProvider)
+## let customGlobalGeohasher: GlobalGeohasher = newGlobalGeohasher(customProvider)
 ## ```
-## 
+##
 ## See the librarys testing for an implementation of a mock dow jones data provider.
 
 
@@ -179,6 +209,11 @@ type
         ## ```
         graticule*: Graticule ## Target graticule for calculations
         dowProvider*: DowJonesProvider  # Data source for Dow Jones prices (strategy pattern)
+
+    GlobalGeohasher* = object
+        ## Container for global geohashing operations with configured data source.
+        dowProvider*: DowJonesProvider  # Data source for Dow Jones prices (strategy pattern)
+        
     
     DowJonesProvider* = ref object of RootObj
         ## Strategy Interface: Abstract base type for Dow Jones data providers.
@@ -281,14 +316,12 @@ proc getApplicableDowDate(graticule: Graticule, targetDate: DateTime): DateTime 
     ## - From 2008-05-27 onwards:
     ##   - West of 30W longitude: Use same day
     ##   - East of 30W longitude: Use previous day
-    ## - Global Geohash (any longitude and date): Use previous day (TODO)
     ##
     ## **Parameters:**
     ## - `graticule`: Target graticule containing longitude for rule application
     ## - `targetDate`: The date for which to calculate geohash
     ##
     ## **Returns:** The date whose Dow Jones price should be used
-    
     if graticule.lon >= -179 and graticule.lon <= -30:
         result = findLatestDowDate(targetDate)
     elif targetDate > dateTime(2008, mMay, 26):
@@ -296,6 +329,20 @@ proc getApplicableDowDate(graticule: Graticule, targetDate: DateTime): DateTime 
     else:
         result = findLatestDowDate(targetDate)
     return
+
+
+proc getApplicableDowDateGlobal(targetDate: DateTime): DateTime =
+    ## Determine the applicable Dow Jones opening date "DJOD" according to
+    ## the global 30W timezone rule.
+    ## 
+    ## **Rules:**
+    ## - Global Geohash (any longitude and date): Use previous day
+    ##
+    ## **Parameters:**
+    ## - `targetDate`: The date for which to calculate geohash
+    ##
+    ## **Returns:** The date whose Dow Jones price should be used
+    return findLatestDowDate(targetDate - 1.days)
 
 
 # =============================================================================
@@ -350,9 +397,9 @@ proc fetchFromSource(source: string, date: Datetime): float =
 
 
 method getDowPrice*(provider: DowJonesProvider, date: DateTime): float {.base.} =
-    # Retrieve the Dow Jones Industrial Average opening price for a specific date.
+    ## Retrieve the Dow Jones Industrial Average opening price for a specific date.
     ##
-    ## **Base method** - must be implemented by concrete provider types.
+    ## **Base method** - must be implemented by concrete provider types. 
     ##
     ## **Parameters:**
     ## - `provider`: The data provider instance
@@ -363,7 +410,6 @@ method getDowPrice*(provider: DowJonesProvider, date: DateTime): float {.base.} 
     ## **Raises:** 
     ## - `DowDataError`: When the price cannot be retrieved
     ## - `CatchableError`: Base implementation always raises this
-
     raise newException(CatchableError, "Not Implemented")
 
 
@@ -472,7 +518,7 @@ proc applyOffsetsToGraticule(graticule: Graticule, latitudeOffset: float, longit
 
 
 proc newGeohasher*(latitude: int, longitude: int, dowProvider: DowJonesProvider = getDefaultDowProvider()): Geohasher =
-    # Create a new Geohasher for the specified graticule.
+    ## Create a new Geohasher for the specified graticule.
     ##
     ## **Parameters:**
     ## - `latitude`: Integer latitude of the target graticule (-90 to +90)
@@ -492,6 +538,18 @@ proc newGeohasher*(latitude: int, longitude: int, dowProvider: DowJonesProvider 
     ## ```
     return Geohasher(
         graticule: Graticule(lat: latitude, lon: longitude),
+        dowProvider: dowProvider
+    )
+
+
+proc newGlobalGeohasher*(dowProvider: DowJonesProvider = getDefaultDowProvider()): GlobalGeohasher =
+    ## Create a new Geohasher for the specified graticule.
+    ## 
+    ## **Parameters:**
+    ## - `dowProvider`: Optional custom Dow Jones data provider
+    ##
+    ## **Returns:** Configured Geohasher ready for coordinate calculations
+    return GlobalGeohasher(
         dowProvider: dowProvider
     )
 
@@ -536,6 +594,34 @@ proc hash*(geohasher: Geohasher, date: Datetime): GeohashResult =
     )
 
 
+proc hash*(globalGeohasher: GlobalGeohasher, date: DateTime): GeohashResult =
+    ## Calculate the global geohash coordinates for the specified date.
+    ## 
+    ## **Parameters:**
+    ## - `globalGeohasher`: Configured GlobalGeohasher instance
+    ## - `date`: Target date for coordinate calculation
+    ##
+    ## **Returns:** GeohashResult with coordinates and metadata
+    ##
+    ## **Raises:** `DowDataError` if Dow Jones data cannot be retrieved
+    let zeroGraticule: Graticule = Graticule(lat: 0, lon: 0)
+    let dowDate: Datetime = getApplicableDowDateGlobal(date)
+    let dowPrice: float = globalGeohasher.dowProvider.getDowPrice(dowDate)
+    let hashStr: string = generateGeohashString(date, dowPrice)
+    let (latitudeOffset, longitudeOffset): (float, float) = md5ToCoordinateOffsets(hashStr)
+    let (finalLatitude, finalLongitude): (float, float) = applyOffsetsToGraticule(zeroGraticule, latitudeOffset, longitudeOffset)
+
+    let globalLatitude: float = finalLatitude * 180 - 90
+    let globalLongitude: float = finalLongitude * 360 - 180
+
+    return GeohashResult(
+        latitude: globalLatitude,
+        longitude: globalLongitude,
+        usedDowDate: dowDate,
+        usedDate: date
+    )
+
+
 proc xkcdgeohash*(latitude: float, longitude: float, date: DateTime, dowProvider: DowJonesProvider = getDefaultDowProvider()): GeohashResult =
     ## Calculate geohash coordinates using the functional API.
     ##
@@ -570,8 +656,124 @@ proc xkcdgeohash*(latitude: float, longitude: float, date: DateTime, dowProvider
     return geohasher.hash(date)
 
 
+proc xkcdglobalgeohash*(date: DateTime, dowProvider: DowJonesProvider = getDefaultDowProvider()): GeohashResult =
+    ## Calculate globaL geohash coordinates using the functional API.
+    ##
+    ## It performs the complete geohashing algorithm and relates them to a point on the globe.
+    ## 
+    ## **Parameters:**
+    ## - `date`: Date for coordinate calculation
+    ## - `dowProvider`: Optional custom Dow Jones data provider
+    ##
+    ## **Returns:** GeohashResult with calculated coordinates and metadata
+    ##
+    ## **Raises:** `DowDataError` if Dow Jones data cannot be retrieved
+    ##
+    ## Example:
+    ## ```nim
+    ## # Simple calculation for today
+    ## let result = xkcdglobalgeohash(now())
+    ## 
+    ## # Specific date with error handling
+    ## try:
+    ##     let coords = xkcdglobalgeohash(dateTime(2008, mMay, 21))
+    ##     echo "Coordinates: ", coords.latitude, ", ", coords.longitude
+    ## except DowDataError as e:
+    ##     echo "Failed to get data: ", e.msg
+    ## ```
+    let geohasher: GlobalGeohasher = GlobalGeohasher(dowProvider: dowProvider)
+    return geohasher.hash(date)
+
+
 # =============================================================================
-# MAIN MODULE TEST
+# OPERATOR OVERLOADS
+# =============================================================================
+
+
+proc `$`*(graticule: Graticule): string =
+    ## Convert Graticule to string representation.
+    return "(" & $graticule.lat & ", " & $graticule.lon & ")"
+
+
+proc `$`*(geohashResult: GeohashResult): string =
+    ## Convert GeohashResult to string representation.
+    return "GeohashResult(lat: " & $geohashResult.latitude & 
+        ", lon: " & $geohashResult.longitude & 
+        ", usedDate: " & geohashResult.usedDate.format("yyyy-MM-dd") &
+        ", usedDowDate: " & geohashResult.usedDowDate.format("yyyy-MM-dd") & ")"
+
+
+proc `$`*(geohasher: Geohasher): string =
+    ## Convert Geohasher to string representation.
+    return "Geohasher(" & $geohasher.graticule & ")"
+
+
+proc `$`*(globalGeohasher: GlobalGeohasher): string =
+    ## Convert GlobalGeohasher to string representation.
+    return "GlobalGeohasher()"
+
+
+proc `==`*(a, b: Graticule): bool =
+    ## Check equality between two Graticule objects.
+    return a.lat == b.lat and a.lon == b.lon
+
+
+proc `==`*(a, b: GeohashResult): bool =
+    ## Check equality between two GeohashResult objects.
+    return a.latitude == b.latitude and 
+           a.longitude == b.longitude and
+           a.usedDate == b.usedDate and
+           a.usedDowDate == b.usedDowDate
+
+
+proc `==`*(a, b: Geohasher): bool =
+    ## Check equality between two Geohasher objects.
+    return a.graticule == b.graticule
+
+
+proc `==`*(a, b: GlobalGeohasher): bool =
+    ## Check equality between two GlobalGeohasher objects.
+    return a.dowProvider == b.dowProvider
+
+
+proc `<`*(a, b: Graticule): bool =
+    ## Compare Graticule objects for ordering (latitude first, then longitude).
+    if a.lat != b.lat:
+        return a.lat < b.lat
+    return a.lon < b.lon
+
+
+proc `<=`*(a, b: Graticule): bool =
+    ## Check if Graticule a is less than or equal to b.
+    return a == b or a < b
+
+
+proc `<`*(a, b: GeohashResult): bool =
+    ## Compare GeohashResult objects for ordering (date first, then coordinates).
+    if a.usedDate != b.usedDate:
+        return a.usedDate < b.usedDate
+    if a.latitude != b.latitude:
+        return a.latitude < b.latitude
+    return a.longitude < b.longitude
+
+
+proc `<=`*(a, b: GeohashResult): bool =
+    ## Check if GeohashResult a is less than or equal to b.
+    return a == b or a < b
+
+
+proc `<`*(a, b: GlobalGeohasher): bool =
+    ## Compare GlobalGeohasher objects for ordering (by provider).
+    return cast[pointer](a.dowProvider) < cast[pointer](b.dowProvider)
+
+
+proc `<=`*(a, b: GlobalGeohasher): bool =
+    ## Check if GlobalGeohasher a is less than or equal to b.
+    return a == b or a < b
+
+
+# =============================================================================
+# MAIN MODULE 
 # =============================================================================
 
 
@@ -580,5 +782,5 @@ when isMainModule:
     # TODO: add cmd parsing
 
 when defined(test):
-    export parseHexFloat, findLatestDowDate, getApplicableDowDate, 
+    export parseHexFloat, findLatestDowDate, getApplicableDowDate, getApplicableDowDateGlobal,
            generateGeohashString, md5ToCoordinateOffsets, applyOffsetsToGraticule

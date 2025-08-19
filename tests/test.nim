@@ -22,7 +22,6 @@ import xkcdgeohash
 const GEO_TOLERANCE: float64 = 0.000005
 
 
-
 # Mock Dow Jones Provider
 
 type MockDowProvider = ref object of DowJonesProvider
@@ -104,7 +103,12 @@ suite "Utility Functions":
         let date: DateTime = dateTime(2007, mApr, 13, 0, 0, 0, 0, utc()) # Friday
         let result: DateTime = getApplicableDowDate(graticule, date)
         check result == date
-
+    
+    test "getApplicableDowDateGlobal - always uses previous day":
+        let monday: DateTime = dateTime(2025, mAug, 19, 0, 0, 0, 0, utc())
+        let result: DateTime = getApplicableDowDateGlobal(monday)
+        check result == dateTime(2025, mAug, 18, 0, 0, 0, 0, utc())
+        
 
 suite "Mock Dow Provider":
     test "Create mock provider with test data":
@@ -192,8 +196,14 @@ suite "Public API":
         check geohasher.graticule.lat == 68
         check geohasher.graticule.lon == -30
         check geohasher.dowProvider == mockProvider
+    
+    test "newGlobalGeohasher - valid object instance":
+        let mockProvider: MockDowProvider = newMockDowProvider(@[(dateTime(2008, mMay, 20), 13026.04)])
+        let globalGeohasher: GlobalGeohasher = newGlobalGeohasher(mockProvider)
+        
+        check globalGeohasher.dowProvider == mockProvider
 
-    test "hash - expected results from known data":
+    test "Geohasher.hash - expected results from known data":
         let mockData: seq[(DateTime, float)] = @[
             (dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()), 12981.20), # Fri
             (dateTime(2012, mFeb, 25, 0, 0, 0, 0, utc()), 12981.20), # Sat
@@ -208,7 +218,7 @@ suite "Public API":
         check result.usedDowDate.format("yyyy-MM-dd") == "2012-02-24"
         check result.usedDate.format("yyyy-MM-dd") == "2012-02-26"
 
-    test "hash - expected results with known data - xkcd comic":
+    test "Geohasher.hash - expected results with known data - xkcd comic":
         let mockData: seq[(DateTime, float)] = @[(dateTime(2005, mMay, 26), 10458.68)]
         let mockProvider: MockDowProvider = newMockDowProvider(mockData)
         let geohasher: Geohasher = newGeohasher(37, -122, mockProvider)
@@ -218,6 +228,20 @@ suite "Public API":
         check abs(result.latitude - 37.857713) < GEO_TOLERANCE
         check abs(result.longitude - -122.544544) < GEO_TOLERANCE
         check result.usedDowDate.format("yyyy-MM-dd") == "2005-05-26"
+    
+    test "GlobalGeohasher.hash - expected results from known data":
+        let mockData: seq[(DateTime, float)] = @[
+            (dateTime(2008, mMay, 20, 0, 0, 0, 0, utc()), 13026.04)
+        ]
+        let mockProvider: MockDowProvider = newMockDowProvider(mockData)
+        let globalGeohasher: GlobalGeohasher = newGlobalGeohasher(mockProvider)
+        
+        let result: GeohashResult = globalGeohasher.hash(dateTime(2008, mMay, 21, 0, 0, 0, 0, utc()))
+        
+        check abs(result.latitude - 85.74626) < GEO_TOLERANCE
+        check abs(result.longitude - 146.18662) < GEO_TOLERANCE
+        check result.usedDate.format("yyyy-MM-dd") == "2008-05-21"
+        check result.usedDowDate.format("yyyy-MM-dd") == "2008-05-20"
 
     test "xkcdgeohash - exprected results":
         let mockData: seq[(DateTime, float)] = @[
@@ -251,6 +275,18 @@ suite "Public API":
         
         check result.usedDowDate.format("yyyy-MM-dd") == "2025-08-18"  # Previous day
         check result.usedDate.format("yyyy-MM-dd") == "2025-08-19"
+    
+    test "xkcdglobalgeohash - expected results":
+        let mockData: seq[(DateTime, float)] = @[
+            (dateTime(2008, mMay, 20, 0, 0, 0, 0, utc()), 13026.04)
+        ]
+        let mockProvider: MockDowProvider = newMockDowProvider(mockData)
+        
+        let result: GeohashResult = xkcdglobalgeohash(dateTime(2008, mMay, 21, 0, 0, 0, 0, utc()), mockProvider)
+        
+        check abs(result.latitude - 85.74626) < GEO_TOLERANCE
+        check abs(result.longitude - 146.18662) < GEO_TOLERANCE
+
 
 # https://geohashing.site/geohashing/30W_Time_Zone_Rule#Testing_for_30W_compliance
 suite "Official Test for 30W Time Zone Rule":
@@ -287,7 +323,6 @@ suite "Official Test for 30W Time Zone Rule":
         let dowProvider: MockDowProvider = newMockDowProvider(mockData)
 
         for i in 0 .. (mockData.len - 1):
-
             let date: Datetime = mockData[i][0]
 
             let westGeohasher: Geohasher = newGeohasher(68, -30, dowProvider)
@@ -328,7 +363,6 @@ suite "Official Test for 30W Time Zone Rule":
         let dowProvider = newMockDowProvider(mockData)
 
         for i in 0 .. (mockData.len - 2):
-
             let date: Datetime = mockData[1 + i][0]
 
             let westGeohasher: Geohasher = newGeohasher(68, -30, dowProvider)
@@ -346,6 +380,45 @@ suite "Official Test for 30W Time Zone Rule":
 
             check abs(westResult.longitude - westExpected[i][1]) < GEO_TOLERANCE
             check abs(eastResult.longitude - eastExpected[i][1]) < GEO_TOLERANCE
+    
+    test "Global - 2008-05-21 to 2008-05-30 (2008-05-20 excluded)":
+        let expected: seq[(float, float)] = @[
+            (85.74626, 146.18662), # 2008-05-21
+            (61.62927, 69.96869),
+            (78.42559, 129.50128),
+            (-67.20336, 17.11192),
+            (79.51947, -114.16550),
+            (31.16306, 38.63088),
+            (-67.43391, 27.75993),
+            (37.87947, -139.41640),
+            (-39.90121, 86.81114),
+            (-31.91030, 73.65004),
+        ] 
+
+        let mockData: seq[(DateTime, float)] = @[
+            (dateTime(2008, mMay, 20, 0, 0, 0, 0, utc()), 13026.04), # Needed for 2008-05-21 as prev day
+            (dateTime(2008, mMay, 21, 0, 0, 0, 0, utc()), 12824.94),
+            (dateTime(2008, mMay, 22, 0, 0, 0, 0, utc()), 12597.69),
+            (dateTime(2008, mMay, 23, 0, 0, 0, 0, utc()), 12620.90),
+            (dateTime(2008, mMay, 24, 0, 0, 0, 0, utc()), 12620.90),
+            (dateTime(2008, mMay, 25, 0, 0, 0, 0, utc()), 12620.90),
+            (dateTime(2008, mMay, 26, 0, 0, 0, 0, utc()), 12620.90),
+            (dateTime(2008, mMay, 27, 0, 0, 0, 0, utc()), 12479.63),
+            (dateTime(2008, mMay, 28, 0, 0, 0, 0, utc()), 12542.90),
+            (dateTime(2008, mMay, 29, 0, 0, 0, 0, utc()), 12593.87),
+            (dateTime(2008, mMay, 30, 0, 0, 0, 0, utc()), 12647.36),
+        ]
+        let dowProvider = newMockDowProvider(mockData)
+
+        for i in 0 .. (mockData.len - 2):
+            let date: Datetime = mockData[1 + i][0]
+
+            let globalGeohasher: GlobalGeohasher = newGlobalGeohasher(dowProvider)
+
+            let result: GeohashResult = globalGeohasher.hash(date)
+
+            check abs(result.latitude - expected[i][0]) < GEO_TOLERANCE
+            check abs(result.longitude - expected[i][1]) < GEO_TOLERANCE
 
 
 # https://geohashing.site/geohashing/30W_Time_Zone_Rule#Testing_for_the_scientific_notation_bug
@@ -371,6 +444,157 @@ suite "Official Test for The Scientific Notation Bug":
 
         check abs(westResult.longitude - -30.483719) < GEO_TOLERANCE
         check abs(eastResult.longitude - -29.483719) < GEO_TOLERANCE
+    
+    test "Global - 2012-02-26 coordinates testdata edge case":
+        let mockData: seq[(DateTime, float)] = @[
+            (dateTime(2012, mFeb, 24, 0, 0, 0, 0, utc()), 12981.20), # Fri
+            (dateTime(2012, mFeb, 25, 0, 0, 0, 0, utc()), 12981.20), # Sat
+            (dateTime(2012, mFeb, 26, 0, 0, 0, 0, utc()), 12981.20) # Sun
+        ]
+        let dowProvider: MockDowProvider = newMockDowProvider(mockData)
+
+        let date: Datetime = dateTime(2012, mFeb, 26, 0, 0, 0, 0, utc())
+
+        let globalGeohasher: GlobalGeohasher = newGlobalGeohasher(dowProvider)
+
+        let result: GeohashResult = globalGeohasher.hash(date)
+
+        check abs(result.latitude - -89.99161) < GEO_TOLERANCE
+        check abs(result.longitude - -5.86128) < GEO_TOLERANCE
+
+
+suite "Operator Overloads":
+    test "Graticule string representation":
+        let graticule = Graticule(lat: 68, lon: -30)
+        check $graticule == "(68, -30)"
+        
+        let negativeGraticule = Graticule(lat: -45, lon: 93)
+        check $negativeGraticule == "(-45, 93)"
+
+    test "Graticule equality":
+        let graticule1 = Graticule(lat: 68, lon: -30)
+        let graticule2 = Graticule(lat: 68, lon: -30)
+        let graticule3 = Graticule(lat: 45, lon: -93)
+        
+        check graticule1 == graticule2
+        check graticule1 != graticule3
+
+    test "Graticule ordering":
+        let graticule1 = Graticule(lat: 45, lon: -93)
+        let graticule2 = Graticule(lat: 68, lon: -30)
+        let graticule3 = Graticule(lat: 45, lon: -30)
+        
+        check graticule1 < graticule2  # lat: 45 < 68
+        check graticule1 < graticule3  # same lat, lon: -93 < -30
+        check graticule1 <= graticule1  # equal
+        check graticule1 <= graticule2  # less than
+
+    test "GeohashResult string representation":
+        let result = GeohashResult(
+            latitude: 68.857713,
+            longitude: -30.544544,
+            usedDate: dateTime(2008, mMay, 26),
+            usedDowDate: dateTime(2008, mMay, 26)
+        )
+        let expected = "GeohashResult(lat: 68.857713, lon: -30.544544, usedDate: 2008-05-26, usedDowDate: 2008-05-26)"
+        check $result == expected
+
+    test "GeohashResult equality":
+        let result1 = GeohashResult(
+            latitude: 68.857713,
+            longitude: -30.544544,
+            usedDate: dateTime(2008, mMay, 26),
+            usedDowDate: dateTime(2008, mMay, 26)
+        )
+        let result2 = GeohashResult(
+            latitude: 68.857713,
+            longitude: -30.544544,
+            usedDate: dateTime(2008, mMay, 26),
+            usedDowDate: dateTime(2008, mMay, 26)
+        )
+        let result3 = GeohashResult(
+            latitude: 45.123456,
+            longitude: -93.654321,
+            usedDate: dateTime(2008, mMay, 27),
+            usedDowDate: dateTime(2008, mMay, 26)
+        )
+        
+        check result1 == result2
+        check result1 != result3
+
+    test "GeohashResult ordering":
+        let result1 = GeohashResult(
+            latitude: 45.0,
+            longitude: -93.0,
+            usedDate: dateTime(2008, mMay, 26),
+            usedDowDate: dateTime(2008, mMay, 26)
+        )
+        let result2 = GeohashResult(
+            latitude: 68.0,
+            longitude: -30.0,
+            usedDate: dateTime(2008, mMay, 27),
+            usedDowDate: dateTime(2008, mMay, 27)
+        )
+        let result3 = GeohashResult(
+            latitude: 45.0,
+            longitude: -95.0,
+            usedDate: dateTime(2008, mMay, 26),
+            usedDowDate: dateTime(2008, mMay, 26)
+        )
+        
+        check result1 < result2  # earlier date
+        check result3 < result1  # same date, same lat, lon: -95.0 < -93.0
+        check result1 <= result1  # equal
+        check result1 <= result2  # less than
+
+    test "Geohasher string representation":
+        let mockProvider = newMockDowProvider(@[(dateTime(2008, mMay, 26), 12620.90)])
+        let geohasher = newGeohasher(68, -30, mockProvider)
+        check $geohasher == "Geohasher((68, -30))"
+
+    test "Geohasher equality":
+        let mockProvider1 = newMockDowProvider(@[(dateTime(2008, mMay, 26), 12620.90)])
+        let mockProvider2 = newMockDowProvider(@[(dateTime(2008, mMay, 27), 12479.63)])
+        
+        let geohasher1 = newGeohasher(68, -30, mockProvider1)
+        let geohasher2 = newGeohasher(68, -30, mockProvider2)
+        let geohasher3 = newGeohasher(45, -93, mockProvider1)
+        
+        check geohasher1 == geohasher2  # same graticule, different providers
+        check geohasher1 != geohasher3  # different graticule
+
+    test "GlobalGeohasher string representation":
+        let mockProvider = newMockDowProvider(@[(dateTime(2008, mMay, 26), 12620.90)])
+        let globalGeohasher = newGlobalGeohasher(mockProvider)
+        check $globalGeohasher == "GlobalGeohasher()"
+
+    test "GlobalGeohasher equality":
+        let mockProvider1 = newMockDowProvider(@[(dateTime(2008, mMay, 26), 12620.90)])
+        let mockProvider2 = newMockDowProvider(@[(dateTime(2008, mMay, 27), 12479.63)])
+        
+        let globalGeohasher1 = newGlobalGeohasher(mockProvider1)
+        let globalGeohasher2 = newGlobalGeohasher(mockProvider1)
+        let globalGeohasher3 = newGlobalGeohasher(mockProvider2)
+        
+        check globalGeohasher1 == globalGeohasher2  # same provider
+        check globalGeohasher1 != globalGeohasher3  # different providers
+
+    test "GlobalGeohasher ordering":
+        let mockProvider1 = newMockDowProvider(@[(dateTime(2008, mMay, 26), 12620.90)])
+        let mockProvider2 = newMockDowProvider(@[(dateTime(2008, mMay, 27), 12479.63)])
+        
+        let globalGeohasher1 = newGlobalGeohasher(mockProvider1)
+        let globalGeohasher2 = newGlobalGeohasher(mockProvider2)
+        
+        # Ordering is based on pointer comparison, so we just check consistency
+        let isLess = globalGeohasher1 < globalGeohasher2
+        check (globalGeohasher1 < globalGeohasher2) != (globalGeohasher2 < globalGeohasher1)  # antisymmetric
+        check globalGeohasher1 <= globalGeohasher1  # reflexive
+        
+        if isLess:
+            check globalGeohasher1 <= globalGeohasher2
+        else:
+            check globalGeohasher2 <= globalGeohasher1
 
 
 echo ""
