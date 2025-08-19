@@ -322,7 +322,6 @@ proc getApplicableDowDate(graticule: Graticule, targetDate: DateTime): DateTime 
     ## - `targetDate`: The date for which to calculate geohash
     ##
     ## **Returns:** The date whose Dow Jones price should be used
-    
     if graticule.lon >= -179 and graticule.lon <= -30:
         result = findLatestDowDate(targetDate)
     elif targetDate > dateTime(2008, mMay, 26):
@@ -343,7 +342,6 @@ proc getApplicableDowDateGlobal(targetDate: DateTime): DateTime =
     ## - `targetDate`: The date for which to calculate geohash
     ##
     ## **Returns:** The date whose Dow Jones price should be used
-
     return findLatestDowDate(targetDate - 1.days)
 
 
@@ -412,7 +410,6 @@ method getDowPrice*(provider: DowJonesProvider, date: DateTime): float {.base.} 
     ## **Raises:** 
     ## - `DowDataError`: When the price cannot be retrieved
     ## - `CatchableError`: Base implementation always raises this
-
     raise newException(CatchableError, "Not Implemented")
 
 
