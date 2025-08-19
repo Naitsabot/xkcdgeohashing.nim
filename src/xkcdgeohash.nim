@@ -708,6 +708,11 @@ proc `$`*(geohasher: Geohasher): string =
     return "Geohasher(" & $geohasher.graticule & ")"
 
 
+proc `$`*(globalGeohasher: GlobalGeohasher): string =
+    ## Convert GlobalGeohasher to string representation.
+    return "GlobalGeohasher()"
+
+
 proc `==`*(a, b: Graticule): bool =
     ## Check equality between two Graticule objects.
     return a.lat == b.lat and a.lon == b.lon
@@ -724,6 +729,11 @@ proc `==`*(a, b: GeohashResult): bool =
 proc `==`*(a, b: Geohasher): bool =
     ## Check equality between two Geohasher objects.
     return a.graticule == b.graticule
+
+
+proc `==`*(a, b: GlobalGeohasher): bool =
+    ## Check equality between two GlobalGeohasher objects.
+    return a.dowProvider == b.dowProvider
 
 
 proc `<`*(a, b: Graticule): bool =
@@ -749,6 +759,16 @@ proc `<`*(a, b: GeohashResult): bool =
 
 proc `<=`*(a, b: GeohashResult): bool =
     ## Check if GeohashResult a is less than or equal to b.
+    return a == b or a < b
+
+
+proc `<`*(a, b: GlobalGeohasher): bool =
+    ## Compare GlobalGeohasher objects for ordering (by provider).
+    return cast[pointer](a.dowProvider) < cast[pointer](b.dowProvider)
+
+
+proc `<=`*(a, b: GlobalGeohasher): bool =
+    ## Check if GlobalGeohasher a is less than or equal to b.
     return a == b or a < b
 
 
