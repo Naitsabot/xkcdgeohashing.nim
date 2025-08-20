@@ -901,7 +901,7 @@ when isMainModule:
             msGoogle = "google"
             msBing = "bing"
             msOSM = "osm"
-            msWaymaked = "waymarked"
+            msWaymarked = "waymarked"
     
 
     const CLI_VERSION = "1.0.0"
@@ -915,7 +915,7 @@ when isMainModule:
     proc parseDate(dateStr: string): DateTime =
         ## Parse date string in YYYY-MM-DD format
         try:
-            result: Datetime = parse(dateStr, "yyyy-MM-dd")
+            result = parse(dateStr, "yyyy-MM-dd")
         except TimeParseError:
             raise newException(ValueError, "Invalid date format. Use YYYY-MM-DD")
         except TimeFormatParseError:
@@ -924,50 +924,50 @@ when isMainModule:
 
     proc formatCoordinate(coord: float, isLatitude: bool, format: OutputFormat): string =
         ## Format coordinate according to specified format
-        case format: OutputFormat
+        case format
         of ofDecimal:
             return formatFloat(coord, ffDecimal, 6)
         of ofCoordinates:
             return formatFloat(coord, ffDecimal, 6)
         of ofDMS:
-            let absCoord: int = abs(coord)
+            let absCoord: float = abs(coord)
             let degrees: int = int(absCoord)
             let minutes: int = int((absCoord - float(degrees)) * 60.0)
             let seconds: float = ((absCoord - float(degrees)) * 60.0 - float(minutes)) * 60.0
 
-            let direction: string
-            if isLatitude:
-                if coord >= 0: 
-                    direction = "N" 
-                else: 
-                    direction = "S"
-            else:
-                if coord >= 0: 
-                    direction = "E" 
-                else: 
-                    direction = "W"
+            let direction =
+                if isLatitude:
+                    if coord >= 0: 
+                        "N" 
+                    else: 
+                        "S"
+                else:
+                    if coord >= 0: 
+                        "E" 
+                    else: 
+                        "W"
             
             return &"{degrees}°{minutes}'{seconds:.1f}\"{direction}" #U+00B0
     
 
-    proc formatOutput(result: GeohashResult, format: OutputFormat): string =
+    proc formatOutput(geohashResult: GeohashResult, format: OutputFormat): string =
         ## Format geohash result according to format
-        let lat: string = formatCoordinate(result.latitude, true, format)
-        let lon: string = formatCoordinate(result.longitude, false, format)
+        let lat: string = formatCoordinate(geohashResult.latitude, true, format)
+        let lon: string = formatCoordinate(geohashResult.longitude, false, format)
 
-        case format: OutputFormat
+        case format
         of ofDecimal, ofDMS:
             return &"{lat}, {lon}"
         of ofCoordinates:
             return &"{lat},{lon}"
 
 
-    proc generateMapUrl(result: GeohashResult, service: MapService, zoom: int, addMarker: bool): string =
+    proc generateMapUrl(geohashResult: GeohashResult, service: MapService, zoom: int, addMarker: bool): string =
         ## Generate map URL for the specified service
-        let lat: string = formatFloat(result.latitude, ffDecimal, 6)
-        let lon: string = formatFloat(result.longitude, ffDecimal, 6)
+        let lat: string = formatFloat(geohashResult.latitude, ffDecimal, 6)
+        let lon: string = formatFloat(geohashResult.longitude, ffDecimal, 6)
         
-        case service: MapService
+        case service
         of msGoogle:
             result = &"https://maps.google.com/?q={lat},{lon}&z={zoom}"
             if addMarker:
@@ -996,7 +996,7 @@ when isMainModule:
 
     proc parseMapService(serviceStr: string): MapService =
         ## Parse map service string
-        case serviceStr.toLowerAscii(): string
+        case serviceStr.toLowerAscii()
         of "google":
             return msGoogle
         of "bing":
