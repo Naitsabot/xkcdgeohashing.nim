@@ -357,7 +357,7 @@ suite "Official Test for 30W Time Zone Rule":
             (dateTime(2008, mMay, 29, 0, 0, 0, 0, utc()), 12593.87),
             (dateTime(2008, mMay, 30, 0, 0, 0, 0, utc()), 12647.36),
         ]
-        let dowProvider = newMockDowProvider(mockData)
+        let dowProvider: MockDowProvider = newMockDowProvider(mockData)
 
         for i in 0 .. (mockData.len - 2):
             let date: Datetime = mockData[1 + i][0]

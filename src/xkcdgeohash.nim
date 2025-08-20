@@ -772,13 +772,51 @@ proc `<=`*(a, b: GlobalGeohasher): bool =
 
 
 # =============================================================================
-# MAIN MODULE 
+# MAIN MODULE Command-line interface for XKCD Geohashing using docopt
 # =============================================================================
 
 
 when isMainModule:
-    discard
-    # TODO: add cmd parsing
+    import std/[strutils, times, os, json, sequtils, strformat, options]
+    import docopt
+
+
+    # =============================================================================
+    # DOCOPT SPECIFICATION
+    # =============================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# =============================================================================
+# DEFINE SPESIFIC EXPORTS
+# =============================================================================
+
 
 when defined(test):
     export parseHexFloat, findLatestDowDate, getApplicableDowDate, getApplicableDowDateGlobal,
