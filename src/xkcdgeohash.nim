@@ -103,14 +103,14 @@
 ##     -v, --verbose            Show additional information
 ##     -j, --json               Output as JSON
 ##     -f, --format=FORMAT      Output format [default: decimal]
-##                             (decimal, dms, coordinates)
+##                              (decimal, dms, coordinates)
 ##     --from=DATE              Start date for range
 ##     --to=DATE                End date for range  
 ##     --days=N                 Last N days from today
 ##     --source=URL             Dow Jones data source URL
 ##     --data-file=FILE         Local Dow Jones data file
 ##     --url=SERVICE            Generate map URL for service
-##                             (google, bing, osm, waymarked)
+##                              (google, bing, osm, waymarked)
 ##     --zoom=LEVEL             Zoom level for map URLs [default: 15]
 ##     --marker                 Add marker to map URL
 ##     -h, --help               Show this help message
