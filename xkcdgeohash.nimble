@@ -12,4 +12,4 @@ bin           = @["xkcdgeohash"]
 
 requires "nim >= 2.2.2"
 requires "checksums >= 0.2.1"
-requires "docopt >= 0.7.1"
+requires "docopt >= 0.7.1" #https://github.com/docopt/docopt.nim
