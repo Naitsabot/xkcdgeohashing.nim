@@ -1019,7 +1019,37 @@ when isMainModule:
 
     proc processGeohash(args: Table[string, Value]): int =
         ## Main processing function
-        discard
+        try:
+            # Parse arguments
+
+            # Parse format
+
+            # Parse zoom level (for map service)
+
+            # Parse map service
+
+            # Determine target date(s)
+
+            # Check coordinate requirements
+
+            # Calculate geohashes (xkcdgeohash)
+
+            # Output results
+
+            return 0
+    
+    except ValueError as e:
+        echo &"Invalid input: {e.msg}"
+        return 1
+    except DowDataError as e:
+        echo &"Error fetching Dow Jones data: {e.msg}"
+        return 2
+    except GeohashError as e:
+        echo &"Geohash error: {e.msg}"
+        return 3
+    except Exception as e:
+        echo &"Unexpected error: {e.msg}"
+        return 4
 
 
     # =============================================================================
