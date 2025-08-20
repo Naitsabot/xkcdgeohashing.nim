@@ -991,7 +991,15 @@ when isMainModule:
 
     proc parseOutputFormat(formatStr: string): OutputFormat =
         ## Parse output format string
-        discard
+        case formatStr.toLowerAscii()
+        of "decimal":
+            return ofDecimal
+        of "dms":
+            return ofDMS
+        of "coordinates":
+            return ofCoordinates
+        else:
+            raise newException(ValueError, "Invalid format. Use: decimal, dms, or coordinates")
 
 
     proc parseMapService(serviceStr: string): MapService =
