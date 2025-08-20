@@ -838,28 +838,107 @@ when isMainModule:
     """
 
 
+    # =============================================================================
+    # TYPES AND CONSTANTS
+    # =============================================================================
 
 
+    type:
+        OutputFormat = enum
+            ofDecimal = "decimal"
+            ofDMS = = "dms"
+            ofCoordinates = "coordinates"
+        
+        MapService = enum
+            msGoogle = ("google", "googlemaps")
+            msBing = ("bing", "bingmaps")
+            msOSM = ("openstreetmap", "osm")
+            msWaymaked = ("waymarked", "waymarkedtrails", "wmt")
+    
+
+    const CLI_VERSION = "1.0.0"
+
+    
+    # =============================================================================
+    # UTILITY FUNCTIONS
+    # =============================================================================
+    
+
+    proc parseDate(dateStr: string): DateTime =
+        ## Parse date string in YYYY-MM-DD format
+        discard
 
 
+    proc formatCoordinate(coord: float, isLatitude: bool, format: OutputFormat): string =
+        ## Format coordinate according to specified format
+        discard
+    
+
+    proc formatOutput(result: GeohashResult, format: OutputFormat): string =
+        ## Format geohash result according to format
+        discard
 
 
+    proc generateMapUrl(result: GeohashResult, service: MapService, zoom: int, addMarker: bool): string =
+        ## Generate map URL for the specified service
+        let lat = formatFloat(result.latitude, ffDecimal, 6)
+        let lon = formatFloat(result.longitude, ffDecimal, 6)
+        
+        case service:
+            of msGoogle:
+                result = &"https://maps.google.com/?q={lat},{lon}&z={zoom}"
+                if addMarker:
+                    result = &"https://maps.google.com/?q={lat},{lon}&z={zoom}"
+                return
+            of msBing:
+                result = &"https://www.bing.com/maps?cp={lat}~{lon}&lvl={zoom}"
+                if addMarker:
+                    result = &"https://www.bing.com/maps?cp={lat}~{lon}&lvl={zoom}&sp=point.{lat}_{lon}"
+                return
+            of msOSM:
+                return &"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}&zoom={zoom}"
+            of msWaymarked:
+                return &"https://hiking.waymarkedtrails.org/#?map={zoom}/{lat}/{lon}"
+    
+
+    # =============================================================================
+    # MAIN PROCESSING
+    # =============================================================================
 
 
+    proc parseOutputFormat(formatStr: string): OutputFormat =
+        ## Parse output format string
+        discard
 
 
+    proc parseMapService(serviceStr: string): MapService =
+        ## Parse map service string
+        case serviceStr.toLowerAscii():
+            of "google":
+                return msGoogle
+            of "bing":
+                return msBing
+            of "osm":
+                return msOSM
+            of "waymarked":
+                return msWaymarked
+            else:
+                raise newException(ValueError, "Invalid service. Use: google, bing, osm, or waymarked")
 
 
+    proc processGeohash(args: Table[string, Value]): int =
+        ## Main processing function
+        discard
 
 
+    # =============================================================================
+    # MAIN ENTRY POINT
+    # =============================================================================
 
 
-
-
-
-
-
-
+    let args = docopt(doc, version = CLI_VERSION)
+    let exitCode = processGeohash(args)
+    quit(exitCode)
 
 
 # =============================================================================
