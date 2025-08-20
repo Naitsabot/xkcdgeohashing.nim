@@ -1,10 +1,7 @@
-## Geohashing library for Nim - Testing
+## Geohashing library for Nim - Testing of src/xkcdgeohash.nim
 ##
 ## Implementation of the geohashing algorithm from https://xkcd.com/426/
 ## Algorithm spec can be seen at: https://geohashing.site/geohashing/The_Algorithm
-## 
-## Basic usage:
-## Run: `nimble test`
 ##
 ## Copyright (c) 2025 Sebastian H. Lorenzen
 ## Licensed under MIT License
@@ -595,6 +592,3 @@ suite "Operator Overloads":
             check globalGeohasher1 <= globalGeohasher2
         else:
             check globalGeohasher2 <= globalGeohasher1
-
-
-echo ""
