@@ -834,7 +834,7 @@ when isMainModule:
     # =============================================================================
 
 
-    const doc = """
+    const doc: string = """
     XKCD Geohash Calculator
 
     Usage:
@@ -891,17 +891,17 @@ when isMainModule:
     # =============================================================================
 
 
-    type:
+    type
         OutputFormat = enum
             ofDecimal = "decimal"
-            ofDMS = = "dms"
+            ofDMS = "dms"
             ofCoordinates = "coordinates"
         
         MapService = enum
-            msGoogle = ("google", "googlemaps")
-            msBing = ("bing", "bingmaps")
-            msOSM = ("openstreetmap", "osm")
-            msWaymaked = ("waymarked", "waymarkedtrails", "wmt")
+            msGoogle = "google"
+            msBing = "bing"
+            msOSM = "osm"
+            msWaymaked = "waymarked"
     
 
     const CLI_VERSION = "1.0.0"
@@ -914,39 +914,74 @@ when isMainModule:
 
     proc parseDate(dateStr: string): DateTime =
         ## Parse date string in YYYY-MM-DD format
-        discard
+        try:
+            result: Datetime = parse(dateStr, "yyyy-MM-dd")
+        except TimeParseError:
+            raise newException(ValueError, "Invalid date format. Use YYYY-MM-DD")
+        except TimeFormatParseError:
+            raise newException(ValueError, "Invalid date format. Use YYYY-MM-DD")
 
 
     proc formatCoordinate(coord: float, isLatitude: bool, format: OutputFormat): string =
         ## Format coordinate according to specified format
-        discard
+        case format: OutputFormat
+        of ofDecimal:
+            return formatFloat(coord, ffDecimal, 6)
+        of ofCoordinates:
+            return formatFloat(coord, ffDecimal, 6)
+        of ofDMS:
+            let absCoord: int = abs(coord)
+            let degrees: int = int(absCoord)
+            let minutes: int = int((absCoord - float(degrees)) * 60.0)
+            let seconds: float = ((absCoord - float(degrees)) * 60.0 - float(minutes)) * 60.0
+
+            let direction: string
+            if isLatitude:
+                if coord >= 0: 
+                    direction = "N" 
+                else: 
+                    direction = "S"
+            else:
+                if coord >= 0: 
+                    direction = "E" 
+                else: 
+                    direction = "W"
+            
+            return &"{degrees}°{minutes}'{seconds:.1f}\"{direction}" #U+00B0
     
 
     proc formatOutput(result: GeohashResult, format: OutputFormat): string =
         ## Format geohash result according to format
-        discard
+        let lat: string = formatCoordinate(result.latitude, true, format)
+        let lon: string = formatCoordinate(result.longitude, false, format)
+
+        case format: OutputFormat
+        of ofDecimal, ofDMS:
+            return &"{lat}, {lon}"
+        of ofCoordinates:
+            return &"{lat},{lon}"
 
 
     proc generateMapUrl(result: GeohashResult, service: MapService, zoom: int, addMarker: bool): string =
         ## Generate map URL for the specified service
-        let lat = formatFloat(result.latitude, ffDecimal, 6)
-        let lon = formatFloat(result.longitude, ffDecimal, 6)
+        let lat: string = formatFloat(result.latitude, ffDecimal, 6)
+        let lon: string = formatFloat(result.longitude, ffDecimal, 6)
         
-        case service:
-            of msGoogle:
+        case service: MapService
+        of msGoogle:
+            result = &"https://maps.google.com/?q={lat},{lon}&z={zoom}"
+            if addMarker:
                 result = &"https://maps.google.com/?q={lat},{lon}&z={zoom}"
-                if addMarker:
-                    result = &"https://maps.google.com/?q={lat},{lon}&z={zoom}"
-                return
-            of msBing:
-                result = &"https://www.bing.com/maps?cp={lat}~{lon}&lvl={zoom}"
-                if addMarker:
-                    result = &"https://www.bing.com/maps?cp={lat}~{lon}&lvl={zoom}&sp=point.{lat}_{lon}"
-                return
-            of msOSM:
-                return &"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}&zoom={zoom}"
-            of msWaymarked:
-                return &"https://hiking.waymarkedtrails.org/#?map={zoom}/{lat}/{lon}"
+            return
+        of msBing:
+            result = &"https://www.bing.com/maps?cp={lat}~{lon}&lvl={zoom}"
+            if addMarker:
+                result = &"https://www.bing.com/maps?cp={lat}~{lon}&lvl={zoom}&sp=point.{lat}_{lon}"
+            return
+        of msOSM:
+            return &"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}&zoom={zoom}"
+        of msWaymarked:
+            return &"https://hiking.waymarkedtrails.org/#?map={zoom}/{lat}/{lon}"
     
 
     # =============================================================================
@@ -961,17 +996,17 @@ when isMainModule:
 
     proc parseMapService(serviceStr: string): MapService =
         ## Parse map service string
-        case serviceStr.toLowerAscii():
-            of "google":
-                return msGoogle
-            of "bing":
-                return msBing
-            of "osm":
-                return msOSM
-            of "waymarked":
-                return msWaymarked
-            else:
-                raise newException(ValueError, "Invalid service. Use: google, bing, osm, or waymarked")
+        case serviceStr.toLowerAscii(): string
+        of "google":
+            return msGoogle
+        of "bing":
+            return msBing
+        of "osm":
+            return msOSM
+        of "waymarked":
+            return msWaymarked
+        else:
+            raise newException(ValueError, "Invalid service. Use: google, bing, osm, or waymarked")
 
 
     proc processGeohash(args: Table[string, Value]): int =
@@ -984,8 +1019,8 @@ when isMainModule:
     # =============================================================================
 
 
-    let args = docopt(doc, version = CLI_VERSION)
-    let exitCode = processGeohash(args)
+    let args: Table[string, Value] = docopt(doc, version = CLI_VERSION)
+    let exitCode: int = processGeohash(args)
     quit(exitCode)
 
 
