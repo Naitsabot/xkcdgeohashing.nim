@@ -820,6 +820,16 @@ proc `<=`*(a, b: GlobalGeohasher): bool =
 
 
 # =============================================================================
+# DEFINE SPESIFIC EXPORTS
+# =============================================================================
+
+
+when defined(test):
+    export parseHexFloat, findLatestDowDate, getApplicableDowDate, getApplicableDowDateGlobal,
+           generateGeohashString, md5ToCoordinateOffsets, applyOffsetsToGraticule
+
+
+# =============================================================================
 # MAIN MODULE Command-line interface for XKCD Geohashing using docopt
 # =============================================================================
 
@@ -1149,13 +1159,3 @@ when isMainModule:
     let args: Table[string, Value] = docopt(doc, version = CLI_VERSION)
     let exitCode: int = processGeohash(args)
     quit(exitCode)
-
-
-# =============================================================================
-# DEFINE SPESIFIC EXPORTS
-# =============================================================================
-
-
-when defined(test):
-    export parseHexFloat, findLatestDowDate, getApplicableDowDate, getApplicableDowDateGlobal,
-           generateGeohashString, md5ToCoordinateOffsets, applyOffsetsToGraticule
