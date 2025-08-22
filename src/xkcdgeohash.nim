@@ -432,7 +432,7 @@ proc fetchFromSource(source: string, date: Datetime): float =
         response = response.strip() # clean response
         
         var price: float
-        if parseFloat(response, price) != 0: # overloaded from parseutils, returns ability of proc
+        if parseFloat(response, price) == 0: # 0 = error # overloaded from parseutils, returns ability of proc
             raise newException(DowDataError, "Could not parse price from response: " & response)
         
         return price
@@ -475,9 +475,9 @@ method getDowPrice(provider: HttpDowProvider, date: Datetime): float =
     ## **Raises:** `DowDataError` when all sources fail
     var lastError: ref Exception = nil
 
-    for i in 0..provider.sources.len:
-        let sourceIndex  = (provider.currentSourceIndex + i) mod provider.sources.len
-        let source = provider.sources[sourceIndex]
+    for i in 0..provider.sources.len-1:
+        let sourceIndex: int  = (provider.currentSourceIndex + i) mod provider.sources.len
+        let source: string = provider.sources[sourceIndex]
 
         try:
             let price: float = fetchFromSource(source, date)
