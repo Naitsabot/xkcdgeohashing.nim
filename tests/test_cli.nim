@@ -12,22 +12,105 @@ import unittest
 
 import xkcdgeohash, osproc, strutils, json, os
 
-const BINARY_PATH = "./xkcdgeohash"
+const BINARY_PATH: string = "./xkcdgeohash.exe"
+
 
 suite "CLI Integration Tests":
     setup:
         # Build the binary before running tests
         let buildResult = execCmd("nimble build")
         if buildResult != 0:
-            fail("Failed to build binary")
+            let text: string = "Failed to build binary"
+            checkpoint(text)
+            fail()
         
         # Check if binary exists
         if not fileExists(BINARY_PATH):
-            fail("Binary not found at " & BINARY_PATH)
+            let text: string = "Binary not found at " & BINARY_PATH
+            checkpoint(text)
+            fail()
 
     test "shows help":
-        let (output, code) = execCmdEx(BINARY_PATH & " --help")
-        check code == 0
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --help")
+        check exitCode == 0
         check "XKCD Geohash Calculator" in output
         check "Usage:" in output
         check "Examples:" in output
+    
+    test "shows version":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --version")
+        check exitCode == 0
+        check output.strip().len > 0
+    
+    test "basic geohash calculation - positive and potitive":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 56 9")
+        check exitCode == 0
+        let coords = output.strip()
+        check coords.contains(",")
+        check coords.contains(".") # Should have decimal places
+    
+    test "basic geohash calculation - positive and negative":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0")
+        check exitCode == 0
+        let coords = output.strip()
+        check coords.contains(",")
+        check coords.contains(".") # Should have decimal places
+
+    test "basic geohash calculation - positive and negative":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " -25.0 40.0")
+        check exitCode == 0
+        let coords = output.strip()
+        check coords.contains(",")
+        check coords.contains(".") # Should have decimal places
+
+    test "basic geohash calculation - negative and negative":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " -25.0 -69")
+        check exitCode == 0
+        let coords = output.strip()
+        check coords.contains(",")
+        check coords.contains(".") # Should have decimal places
+
+    test "global geohash":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --global")
+        check exitCode == 0
+        let coords = output.strip()
+        check coords.contains(",")
+    
+    test "specific date - 2008-05-26":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --date=2008-05-26")
+        check exitCode == 0
+        let coords = output.strip()
+        check coords.contains(",")
+
+    test "specific date - 2000-02-02":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --date=2000-02-02")
+        check exitCode == 0
+        let coords = output.strip()
+        check coords.contains(",")
+    
+    test "specific date - 2012-12-12":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --date=2012-12-12")
+        check exitCode == 0
+        let coords = output.strip()
+        check coords.contains(",")
+    
+    test "verbose output":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --verbose")
+        check exitCode == 0
+        check "used Dow:" in output
+        check "target:" in output
+    
+    test "DMS format":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --format=dms")
+        check exitCode == 0
+        let coords = output.strip()
+        check "°" in coords
+        check ("N" in coords or "S" in coords)
+        check ("E" in coords or "W" in coords)
+    
+    test "coordinates format":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --format=coordinates")
+        check exitCode == 0
+        let coords = output.strip()
+        check coords.contains(",")
+        check not coords.contains(" ")  # No spaces in coordinates format
