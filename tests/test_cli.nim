@@ -8,9 +8,8 @@
 ## Wont bother with splitting the processGeohash funciton and making unit tests
 ## Standalone functions will get unit tests
 
-import unittest
-
-import xkcdgeohash, osproc, strutils, json, os
+import 
+import std/[json, os, osproc, strutils, unittest]
 
 const BINARY_PATH: string = "./xkcdgeohash.exe"
 
@@ -131,7 +130,9 @@ suite "CLI Integration Tests":
             check result.hasKey("date")
             check result.hasKey("used_dow_date")
         except JsonParsingError:
-            fail("Output is not valid JSON: " & output)
+            let text: string = "Output is not valid JSON: " & output
+            checkpoint(text)
+            fail()
     
     test "multiple days":
         let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --days=3")

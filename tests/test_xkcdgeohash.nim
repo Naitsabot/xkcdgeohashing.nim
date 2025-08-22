@@ -6,8 +6,7 @@
 ## Copyright (c) 2025 Sebastian H. Lorenzen
 ## Licensed under MIT License
 
-import unittest
-import std/times
+import std/[times, unittest]
 
 import xkcdgeohash
 
