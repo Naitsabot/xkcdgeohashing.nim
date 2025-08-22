@@ -8,6 +8,7 @@
 ## Wont bother with splitting the processGeohash funciton and making unit tests
 ## Standalone functions will get unit tests
 
+
 import std/[json, os, osproc, strutils, unittest]
 
 
@@ -143,29 +144,29 @@ suite "CLI Integration Tests":
             check ":" in line  # Should have date: coordinates format
     
     test "Google Maps URL":
-        let (output, code) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --url=google")
-        check code == 0
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --url=google")
+        check exitCode == 0
         let lines = output.strip().split('\n')
         check lines.len == 2  # Coordinates + URL
         check "https://maps.google.com" in lines[1]
     
     test "OpenStreetMap URL with custom zoom":
-        let (output, code) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --url=osm --zoom=12")
-        check code == 0
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --url=osm --zoom=12")
+        check exitCode == 0
         let lines = output.strip().split('\n')
         check "openstreetmap.org" in lines[1]
         check "zoom=12" in lines[1]
 
     test "Bing Maps URL":
-        let (output, code) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --url=bing")
-        check code == 0
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --url=bing")
+        check exitCode == 0
         let lines = output.strip().split('\n')
         check lines.len == 2  # Coordinates + URL
         check "https://www.bing.com/maps/" in lines[1]
 
     test "Waymarked Trails (Hiking) map URL":
-        let (output, code) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --url=waymarked")
-        check code == 0
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --url=waymarked")
+        check exitCode == 0
         let lines = output.strip().split('\n')
         check lines.len == 2  # Coordinates + URL
         check "https://hiking.waymarkedtrails.org/" in lines[1]
@@ -177,7 +178,36 @@ suite "CLI Integration Tests":
         check "Map: https://maps.google.com" in output
 
 
-
+suite "CLI Error Handling":
+    test "missing coordinates":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0")
+        check exitCode == 1
+        check "Error" in output.toLowerAscii()
+    
+    test "invalid coordinates":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " invalid coords")
+        check exitCode == 1
+        check "Error" in output.toLowerAscii()
+    
+    test "invalid date format":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --date=invalid")
+        check exitCode == 1
+        check "Invalid" in output
+    
+    test "invalid output format":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --format=invalid")
+        check exitCode == 1
+        check "Invalid format" in output
+    
+    test "invalid map service":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --url=invalid")
+        check exitCode == 1
+        check "Invalid service" in output
+    
+    test "coordinates without global flag":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH)
+        check exitCode == 1
+        check "both latitude and longitude" in output or "global" in output
 
 
 suite "CLI Performance":
