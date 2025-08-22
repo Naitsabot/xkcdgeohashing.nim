@@ -176,3 +176,14 @@ suite "CLI Integration Tests":
         check code == 0
         check "used Dow:" in output
         check "Map: https://maps.google.com" in output
+
+
+
+
+
+suite "CLI Performance":
+    test "many days calculation":
+        let (output, code) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --days=30")
+        check code == 0
+        let lines = output.strip().split('\n')
+        check lines.len == 30
