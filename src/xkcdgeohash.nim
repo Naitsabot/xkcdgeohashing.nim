@@ -825,7 +825,7 @@ proc `<=`*(a, b: GlobalGeohasher): bool =
 
 
 when isMainModule:
-    import std/[os, json, sequtils, strformat, options, math]
+    import std/[json, strformat, options, math]
     import docopt
 
 
@@ -1016,13 +1016,11 @@ when isMainModule:
         else:
             raise newException(ValueError, "Invalid service. Use: google, bing, osm, or waymarked")
 
-
+        
     proc processGeohash(args: Table[string, Value]): int =
         ## Main processing function
         try:
             # Extract and validate basic arguments
-            echo args
-
             let latitude: float = if args["<latitude>"]: parseFloat($args["<latitude>"]) else: NaN
             let longitude: float = if args["<longitude>"]: parseFloat($args["<longitude>"]) else: NaN
             let isGlobal: bool = bool(args["--global"])
@@ -1073,10 +1071,11 @@ when isMainModule:
                 return 1
 
             # Calculate geohashe(s) (xkcdgeohash)
+            # TODO: Use OOP api for multiple dates
             var geohashResults: seq[GeohashResult] = @[]
         
             for targetDate in dates:
-                let geohashResult = if needsGlobal:
+                let geohashResult: GeohashResult = if needsGlobal:
                     xkcdglobalgeohash(targetDate)
                 else:
                     xkcdgeohash(latitude, longitude, targetDate)
