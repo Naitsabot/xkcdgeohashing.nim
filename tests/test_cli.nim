@@ -11,6 +11,7 @@
 import 
 import std/[json, os, osproc, strutils, unittest]
 
+
 const BINARY_PATH: string = "./xkcdgeohash.exe"
 
 
