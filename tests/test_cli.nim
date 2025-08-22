@@ -49,7 +49,7 @@ suite "CLI Integration Tests":
         check coords.contains(".") # Should have decimal places
     
     test "basic geohash calculation - positive and negative":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " -- 68.0 -30.0")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0")
         check exitCode == 0
         let coords = output.strip()
         check coords.contains(",")
