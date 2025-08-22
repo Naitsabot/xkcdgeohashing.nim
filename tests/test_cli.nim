@@ -114,3 +114,21 @@ suite "CLI Integration Tests":
         let coords = output.strip()
         check coords.contains(",")
         check not coords.contains(" ")  # No spaces in coordinates format
+    
+    test "JSON output":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --json")
+        check exitCode == 0
+        
+        # Should be valid JSON
+        try:
+            let jsonData = parseJson(output.strip())
+            check jsonData.kind == JArray
+            check jsonData.len == 1
+            
+            let result = jsonData[0]
+            check result.hasKey("latitude")
+            check result.hasKey("longitude")
+            check result.hasKey("date")
+            check result.hasKey("used_dow_date")
+        except JsonParsingError:
+            fail("Output is not valid JSON: " & output)
