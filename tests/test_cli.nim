@@ -132,3 +132,45 @@ suite "CLI Integration Tests":
             check result.hasKey("used_dow_date")
         except JsonParsingError:
             fail("Output is not valid JSON: " & output)
+    
+    test "multiple days":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --days=3")
+        check exitCode == 0
+        let lines = output.strip().split('\n')
+        check lines.len == 3  # Should have 3 lines of output
+        for line in lines:
+            check ":" in line  # Should have date: coordinates format
+    
+    test "Google Maps URL":
+        let (output, code) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --url=google")
+        check code == 0
+        let lines = output.strip().split('\n')
+        check lines.len == 2  # Coordinates + URL
+        check "https://maps.google.com" in lines[1]
+    
+    test "OpenStreetMap URL with custom zoom":
+        let (output, code) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --url=osm --zoom=12")
+        check code == 0
+        let lines = output.strip().split('\n')
+        check "openstreetmap.org" in lines[1]
+        check "zoom=12" in lines[1]
+
+    test "Bing Maps URL":
+        let (output, code) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --url=bing")
+        check code == 0
+        let lines = output.strip().split('\n')
+        check lines.len == 2  # Coordinates + URL
+        check "https://www.bing.com/maps/" in lines[1]
+
+    test "Waymarked Trails (Hiking) map URL":
+        let (output, code) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --url=waymarked")
+        check code == 0
+        let lines = output.strip().split('\n')
+        check lines.len == 2  # Coordinates + URL
+        check "https://hiking.waymarkedtrails.org/" in lines[1]
+    
+    test "verbose with map URL":
+        let (output, code) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --verbose --url=google")
+        check code == 0
+        check "used Dow:" in output
+        check "Map: https://maps.google.com" in output
