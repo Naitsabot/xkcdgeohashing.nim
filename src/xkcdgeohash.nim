@@ -825,7 +825,7 @@ proc `<=`*(a, b: GlobalGeohasher): bool =
 
 
 when isMainModule:
-    import std/[os, json, sequtils, strformat, options]
+    import std/[os, json, sequtils, strformat, options, math]
     import docopt
 
 
@@ -835,54 +835,54 @@ when isMainModule:
 
 
     const doc: string = """
-XKCD Geohash Calculator
+    XKCD Geohash Calculator
 
-Usage:
-    xkcdgeohash [<latitude> <longitude>] [options]
-    xkcdgeohash --global [options]
-    xkcdgeohash --version
-    xkcdgeohash --help
+    Usage:
+        xkcdgeohash [<latitude> <longitude>] [options]
+        xkcdgeohash --global [options]
+        xkcdgeohash --version
+        xkcdgeohash --help
 
-Arguments:
-    <latitude>               Target latitude
-    <longitude>              Target longitude
+    Arguments:
+        <latitude>               Target latitude
+        <longitude>              Target longitude
 
-Options:
-    -d, --date=DATE          Target date (YYYY-MM-DD, default: today)
-    -g, --global             Calculate global geohash
-    -v, --verbose            Show additional information
-    -j, --json               Output as JSON
-    -f, --format=FORMAT      Output format [default: decimal]
-                            (decimal, dms, coordinates)
-    --from=DATE              Start date for range
-    --to=DATE                End date for range  
-    --days=N                 Last N days from today
-    --source=URL             Dow Jones data source URL
-    --data-file=FILE         Local Dow Jones data file
-    --url=SERVICE            Generate map URL for service
-                            (google, bing, osm, waymarked)
-    --zoom=LEVEL             Zoom level for map URLs [default: 15]
-    --marker                 Add marker to map URL
-    -h, --help               Show this help message
-    --version                Show version
+    Options:
+        -d, --date=DATE          Target date (YYYY-MM-DD, default: today)
+        -g, --global             Calculate global geohash
+        -v, --verbose            Show additional information
+        -j, --json               Output as JSON
+        -f, --format=FORMAT      Output format [default: decimal]
+                                (decimal, dms, coordinates)
+        --from=DATE              Start date for range
+        --to=DATE                End date for range  
+        --days=N                 Last N days from today
+        --source=URL             Dow Jones data source URL
+        --data-file=FILE         Local Dow Jones data file
+        --url=SERVICE            Generate map URL for service
+                                (google, bing, osm, waymarked)
+        --zoom=LEVEL             Zoom level for map URLs [default: 15]
+        --marker                 Add marker to map URL
+        -h, --help               Show this help message
+        --version                Show version
 
-Output Formats:
-    decimal                  68.857713, -30.544544 (default)
-    dms                      68°51'27.8"N, 30°32'40.4"W
-    coordinates              68.857713,-30.544544
+    Output Formats:
+        decimal                  68.857713, -30.544544 (default)
+        dms                      68°51'27.8"N, 30°32'40.4"W
+        coordinates              68.857713,-30.544544
 
-URL Services:
-    google                   Google Maps
-    bing                     Bing Maps  
-    osm                      OpenStreetMap
-    waymarked                Waymarked Trails (hiking/cycling routes)
+    URL Services:
+        google                   Google Maps
+        bing                     Bing Maps  
+        osm                      OpenStreetMap
+        waymarked                Waymarked Trails (hiking/cycling routes)
 
-Examples:
-    xkcdgeohash 68.0 -30.0
-    xkcdgeohash --global --date=2008-05-26
-    xkcdgeohash 68.0 -30.0 --url=google --marker
-    xkcdgeohash 45.0 -93.0 --days=7 --url=google --json
-    xkcdgeohash 68.0 -30.0 --verbose --url=osm --zoom=12
+    Examples:
+        xkcdgeohash 68.0 -30.0
+        xkcdgeohash --global --date=2008-05-26
+        xkcdgeohash 68.0 -30.0 --url=google --marker
+        xkcdgeohash 45.0 -93.0 --days=7 --url=google --json
+        xkcdgeohash 68.0 -30.0 --verbose --url=osm --zoom=12
     """
 
 
@@ -1020,21 +1020,111 @@ Examples:
     proc processGeohash(args: Table[string, Value]): int =
         ## Main processing function
         try:
-            # Parse arguments
+            # Extract and validate basic arguments
+            echo args
 
-            # Parse format
+            let latitude: float = if args["<latitude>"]: parseFloat($args["<latitude>"]) else: NaN
+            let longitude: float = if args["<longitude>"]: parseFloat($args["<longitude>"]) else: NaN
+            let isGlobal: bool = bool(args["--global"])
+            let verbose: bool = bool(args["--verbose"])
+            let outputJson: bool = bool(args["--json"])
+            let addMarker: bool = bool(args["--marker"])
+
+            # Parse format option
+            let formatStr: string = if args["--format"]: $args["--format"] else: "decimal"
+            let outputFormat: OutputFormat = parseOutputFormat(formatStr)
 
             # Parse zoom level (for map service)
+            let zoomLevel: int = if args["--zoom"]: parseInt($args["--zoom"]) else: 15
 
             # Parse map service
-
+            let mapService: Option[MapService] = if args["--url"]:
+                some(parseMapService($args["--url"]))
+            else:
+                none(MapService)
+            
             # Determine target date(s)
+            var dates: seq[DateTime] = @[]
+
+            if args["--days"] and parseInt($args["--days"]) > 0:
+                # Process last N days
+                let daysBack: int = parseInt($args["--days"])
+                for i in 0..<daysBack:
+                    dates.add(now() - i.days)
+            elif args["--from"] and args["--to"]:
+                # Process date range
+                let fromDate: DateTime = parseDate($args["--from"])
+                let toDate: DateTime = parseDate($args["--to"])
+                var currentDate: DateTime = fromDate
+                while currentDate <= toDate:
+                    dates.add(currentDate)
+                    currentDate = currentDate + 1.days
+            else:
+                # Process single date (fallback/common)
+                let targetDate: DateTime = if args["--date"]: parseDate($args["--date"]) else: now()
+                dates.add(targetDate)
 
             # Check coordinate requirements
+            let hasCoords: bool = not latitude.isNaN and not longitude.isNaN # need to exist if local
+            let needsGlobal: bool = isGlobal or not hasCoords # need to exist for global
 
-            # Calculate geohashes (xkcdgeohash)
+            if not needsGlobal and (latitude.isNaN or longitude.isNaN):
+                echo "Error: Provide both latitude and longitude for local hashes, or use --global for global hashes"
+                return 1
 
-            # Output results
+            # Calculate geohashe(s) (xkcdgeohash)
+            var geohashResults: seq[GeohashResult] = @[]
+        
+            for targetDate in dates:
+                let geohashResult = if needsGlobal:
+                    xkcdglobalgeohash(targetDate)
+                else:
+                    xkcdgeohash(latitude, longitude, targetDate)
+                
+                geohashResults.add(geohashResult)
+
+            # Output results in desired formatting
+            if outputJson:
+                # JSON output
+                var jsonResults: JsonNode = newJArray()
+                for geohashResult in geohashResults:
+                    var jsonResult: JsonNode = %*{
+                        "date": geohashResult.usedDate.format("yyyy-MM-dd"),
+                        "latitude": geohashResult.latitude,
+                        "longitude": geohashResult.longitude,
+                        "used_dow_date": geohashResult.usedDowDate.format("yyyy-MM-dd"),
+                        "coordinates": formatOutput(geohashResult, outputFormat)
+                    }
+                    
+                    if mapService.isSome():
+                        jsonResult["map_url"] = %generateMapUrl(geohashResult, mapService.get(), zoomLevel, addMarker)
+                    
+                    jsonResults.add(jsonResult)
+                
+                echo pretty(jsonResults)
+
+            else:
+                # Plain text output
+                for geohashResult in geohashResults:
+                    let coords: string = formatOutput(geohashResult, outputFormat)
+
+                    if verbose:
+                        # Verbose: show metadata
+                        echo &"{coords} (used Dow: {geohashResult.usedDowDate.format(\"yyyy-MM-dd\")}, target: {geohashResult.usedDate.format(\"yyyy-MM-dd\")})"
+                    else:
+                        # Normal: show coordinates only
+                        if dates.len > 1:
+                            echo &"{geohashResult.usedDate.format(\"yyyy-MM-dd\")}: {coords}"
+                        else:
+                            echo coords
+                    
+                    # Add map URL if requested
+                    if mapService.isSome():
+                        let mapUrl: string = generateMapUrl(geohashResult, mapService.get(), zoomLevel, addMarker)
+                        if verbose:
+                            echo &"Map: {mapUrl}"
+                        elif not outputJson:
+                            echo mapUrl
 
             return 0
     
