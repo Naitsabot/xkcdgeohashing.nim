@@ -834,7 +834,7 @@ when defined(test):
 
 
 when isMainModule:
-    import std/[json, strformat, strutils, options, math]
+    import std/[json, strformat, options, math]
     import docopt
 
 
