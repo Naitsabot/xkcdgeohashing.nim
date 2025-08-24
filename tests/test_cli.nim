@@ -182,7 +182,7 @@ suite "CLI Error Handling":
     test "missing coordinates":
         let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --test")
         check exitCode == 0
-        check "Invalid" in output
+        check "Usage" in output
     
     test "invalid coordinates":
         let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=invalid --lon=coords --test")
