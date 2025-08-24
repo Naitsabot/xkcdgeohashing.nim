@@ -230,7 +230,9 @@ suite "CLi Possible Edge Cases":
             check jsonData.kind == JArray
             check jsonData.len == 2
         except JsonParsingError:
-            fail("Invalid JSON output")
+            let text: string = "Invalid JSON output"
+            checkpoint(text)
+            fail()
 
 
 suite "CLI Performance":
