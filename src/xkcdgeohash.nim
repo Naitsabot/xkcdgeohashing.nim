@@ -835,7 +835,7 @@ when defined(test):
 
 
 when isMainModule:
-    import std/[json, strformat, options, math]
+    import std/[json, strformat, strutils, options, math]
     import docopt
 
 
@@ -848,16 +848,14 @@ when isMainModule:
     XKCD Geohash Calculator
 
     Usage:
-        xkcdgeohash [<latitude> <longitude>] [options]
+        xkcdgeohash --lat=<latitude> --lon=<longitude> [options]
         xkcdgeohash --global [options]
         xkcdgeohash --version
         xkcdgeohash --help
 
-    Arguments:
-        <latitude>               Target latitude
-        <longitude>              Target longitude
-
     Options:
+        --lat=<latitude>         Target latitude
+        --lon=<longitude>        Target longitude
         -d, --date=DATE          Target date (YYYY-MM-DD, default: today)
         -g, --global             Calculate global geohash
         -v, --verbose            Show additional information
@@ -888,11 +886,11 @@ when isMainModule:
         waymarked                Waymarked Trails (hiking/cycling routes)
 
     Examples:
-        xkcdgeohash 68.0 -30.0
+        xkcdgeohash --lat=68.0 --lon=-30.0
         xkcdgeohash --global --date=2008-05-26
-        xkcdgeohash 68.0 -30.0 --url=google --marker
-        xkcdgeohash 45.0 -93.0 --days=7 --url=google --json
-        xkcdgeohash 68.0 -30.0 --verbose --url=osm --zoom=12
+        xkcdgeohash --lat=68.0 --lon=-30.0 --url=google --marker
+        xkcdgeohash --lat=45.0 --lon=-93.0 --days=7 --url=google --json
+        xkcdgeohash --lat=68.0 --lon=-30.0 --verbose --url=osm --zoom=12
     """
 
 
@@ -1030,9 +1028,9 @@ when isMainModule:
     proc processGeohash(args: Table[string, Value]): int =
         ## Main processing function
         try:
-            # Extract and validate basic arguments
-            let latitude: float = if args["<latitude>"]: parseFloat($args["<latitude>"]) else: NaN
-            let longitude: float = if args["<longitude>"]: parseFloat($args["<longitude>"]) else: NaN
+            # Extract and validate basic arguments (and instringify if stringified)
+            let latitude: float = if args["--lat"]: parseFloat($args["--lat"]) else: NaN
+            let longitude: float = if args["--lon"]: parseFloat($args["--lon"]) else: NaN
             let isGlobal: bool = bool(args["--global"])
             let verbose: bool = bool(args["--verbose"])
             let outputJson: bool = bool(args["--json"])
@@ -1077,7 +1075,7 @@ when isMainModule:
             let needsGlobal: bool = isGlobal or not hasCoords # need to exist for global
 
             if not needsGlobal and (latitude.isNaN or longitude.isNaN):
-                echo "Error: Provide both latitude and longitude for local hashes, or use --global for global hashes"
+                echo "Error: Provide both --lat and --lon for local hashes, or use --global for global hashes"
                 return 1
 
             # Calculate geohashe(s) (xkcdgeohash)

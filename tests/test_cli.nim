@@ -18,7 +18,7 @@ const BINARY_PATH: string = "./xkcdgeohash.exe"
 suite "CLI Integration Tests":
     setup:
         # Build the binary before running tests
-        let buildResult = execCmd("nimble build")
+        let buildResult: int = execCmd("nimble build")
         if buildResult != 0:
             let text: string = "Failed to build binary"
             checkpoint(text)
@@ -42,29 +42,29 @@ suite "CLI Integration Tests":
         check exitCode == 0
         check output.strip().len > 0
     
-    test "basic geohash calculation - positive and potitive":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 56 9")
+    test "basic geohash calculation - positive and positive":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=56.0 --lon=9.0")
         check exitCode == 0
         let coords = output.strip()
         check coords.contains(",")
         check coords.contains(".") # Should have decimal places
     
     test "basic geohash calculation - positive and negative":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0")
         check exitCode == 0
         let coords = output.strip()
         check coords.contains(",")
         check coords.contains(".") # Should have decimal places
 
-    test "basic geohash calculation - positive and negative":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " -25.0 40.0")
+    test "basic geohash calculation - negative and positive":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=-25.0 --lon=40.0")
         check exitCode == 0
         let coords = output.strip()
         check coords.contains(",")
         check coords.contains(".") # Should have decimal places
 
     test "basic geohash calculation - negative and negative":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " -25.0 -69")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=-25.0 --lon=-69.0")
         check exitCode == 0
         let coords = output.strip()
         check coords.contains(",")
@@ -77,31 +77,31 @@ suite "CLI Integration Tests":
         check coords.contains(",")
     
     test "specific date - 2008-05-26":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --date=2008-05-26")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0 --date=2008-05-26")
         check exitCode == 0
         let coords = output.strip()
         check coords.contains(",")
 
     test "specific date - 2000-02-02":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --date=2000-02-02")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0 --date=2000-02-02")
         check exitCode == 0
         let coords = output.strip()
         check coords.contains(",")
     
     test "specific date - 2012-12-12":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --date=2012-12-12")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0 --date=2012-12-12")
         check exitCode == 0
         let coords = output.strip()
         check coords.contains(",")
     
     test "verbose output":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --verbose")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0 --verbose")
         check exitCode == 0
         check "used Dow:" in output
         check "target:" in output
     
     test "DMS format":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --format=dms")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0 --format=dms")
         check exitCode == 0
         let coords = output.strip()
         check "°" in coords
@@ -109,14 +109,14 @@ suite "CLI Integration Tests":
         check ("E" in coords or "W" in coords)
     
     test "coordinates format":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --format=coordinates")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0 --format=coordinates")
         check exitCode == 0
         let coords = output.strip()
         check coords.contains(",")
         check not coords.contains(" ")  # No spaces in coordinates format
     
     test "JSON output":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --json")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0 --json")
         check exitCode == 0
         
         # Should be valid JSON
@@ -136,7 +136,7 @@ suite "CLI Integration Tests":
             fail()
     
     test "multiple days":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --days=3")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0 --days=3")
         check exitCode == 0
         let lines = output.strip().split('\n')
         check lines.len == 3  # Should have 3 lines of output
@@ -144,35 +144,35 @@ suite "CLI Integration Tests":
             check ":" in line  # Should have date: coordinates format
     
     test "Google Maps URL":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --url=google")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0 --url=google")
         check exitCode == 0
         let lines = output.strip().split('\n')
         check lines.len == 2  # Coordinates + URL
         check "https://maps.google.com" in lines[1]
     
     test "OpenStreetMap URL with custom zoom":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --url=osm --zoom=12")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0 --url=osm --zoom=12")
         check exitCode == 0
         let lines = output.strip().split('\n')
         check "openstreetmap.org" in lines[1]
         check "zoom=12" in lines[1]
 
     test "Bing Maps URL":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --url=bing")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0 --url=bing")
         check exitCode == 0
         let lines = output.strip().split('\n')
         check lines.len == 2  # Coordinates + URL
         check "https://www.bing.com/maps/" in lines[1]
 
     test "Waymarked Trails (Hiking) map URL":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --url=waymarked")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0 --url=waymarked")
         check exitCode == 0
         let lines = output.strip().split('\n')
         check lines.len == 2  # Coordinates + URL
         check "https://hiking.waymarkedtrails.org/" in lines[1]
     
     test "verbose with map URL":
-        let (output, code) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --verbose --url=google")
+        let (output, code) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0 --verbose --url=google")
         check code == 0
         check "used Dow:" in output
         check "Map: https://maps.google.com" in output
@@ -180,27 +180,27 @@ suite "CLI Integration Tests":
 
 suite "CLI Error Handling":
     test "missing coordinates":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0")
         check exitCode == 1
         check "Error" in output.toLowerAscii()
     
     test "invalid coordinates":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " invalid coords")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=invalid --lon=coords")
         check exitCode == 1
         check "Error" in output.toLowerAscii()
     
     test "invalid date format":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --date=invalid")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0 --date=invalid")
         check exitCode == 1
         check "Invalid" in output
     
     test "invalid output format":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --format=invalid")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0 --format=invalid")
         check exitCode == 1
         check "Invalid format" in output
     
     test "invalid map service":
-        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --url=invalid")
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0 --url=invalid")
         check exitCode == 1
         check "Invalid service" in output
     
@@ -210,9 +210,32 @@ suite "CLI Error Handling":
         check "both latitude and longitude" in output or "global" in output
 
 
+suite "CLi Possible Edge Cases":
+    test "zero coordinates":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=0.0 --lon=0.0")
+        check exitCode == 0
+        check output.strip().contains(",")
+    
+    test "large coordinate values":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=89.9 --lon=179.9")
+        check exitCode == 0
+        check output.strip().contains(",")
+
+    test "JSON with multiple days":
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0 --days=2 --json")
+        check exitCode == 0
+        
+        try:
+            let jsonData = parseJson(output.strip())
+            check jsonData.kind == JArray
+            check jsonData.len == 2
+        except JsonParsingError:
+            fail("Invalid JSON output")
+
+
 suite "CLI Performance":
     test "many days calculation":
-        let (output, code) = execCmdEx(BINARY_PATH & " 68.0 -30.0 --days=30")
-        check code == 0
-        let lines = output.strip().split('\n')
+        let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0 --days=30")
+        check exitCode == 0
+        let lines: seq[string] = output.strip().split('\n')
         check lines.len == 30
