@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.2.1"
+version       = "1.0.0"
 author        = "Naitsabot"
 description   = "Implementation for the geohashing algorithm described in xkcd #426"
 license       = "MIT"
