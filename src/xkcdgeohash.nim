@@ -84,8 +84,55 @@
 
 
 ## ## **Commandline Use**:
+## ```
+## XKCD Geohash Calculator
 ## 
-## **TODO**: *Yet to be implemented*
+## Usage:
+##     xkcdgeohash --lat=<latitude> --lon=<longitude> [options]
+##     xkcdgeohash --global [options]
+##     xkcdgeohash --version
+##     xkcdgeohash --help
+## 
+## Options:
+##     --lat=<latitude>         Target latitude
+##     --lon=<longitude>        Target longitude
+##     -d, --date=DATE          Target date (YYYY-MM-DD, default: today)
+##     -g, --global             Calculate global geohash
+##     -v, --verbose            Show additional information
+##     -j, --json               Output as JSON
+##     -f, --format=FORMAT      Output format [default: decimal]
+##                             (decimal, dms, coordinates)
+##     --from=DATE              Start date for range
+##     --to=DATE                End date for range  
+##     --days=N                 Last N days from today
+##     --source=URL             Dow Jones data source URL
+##     --data-file=FILE         Local Dow Jones data file
+##     --url=SERVICE            Generate map URL for service
+##                             (google, bing, osm, waymarked)
+##     --zoom=LEVEL             Zoom level for map URLs [default: 15]
+##     --marker                 Add marker to map URL
+##     -h, --help               Show this help message
+##     --version                Show version
+##     --test                   Toggle use of mockdata when testing
+## 
+## Output Formats:
+##     decimal                  68.857713, -30.544544 (default)
+##     dms                      68°51'27.8"N, 30°32'40.4"W
+##     coordinates              68.857713,-30.544544
+## 
+## URL Services:
+##     google                   Google Maps
+##     bing                     Bing Maps  
+##     osm                      OpenStreetMap
+##     waymarked                Waymarked Trails (hiking/cycling routes)
+## 
+## Examples:
+##     xkcdgeohash --lat=68.0 --lon=-30.0
+##     xkcdgeohash --global --date=2008-05-26
+##     xkcdgeohash --lat=68.0 --lon=-30.0 --url=google --marker
+##     xkcdgeohash --lat=45.0 --lon=-93.0 --days=7 --url=google --json
+##     xkcdgeohash --lat=68.0 --lon=-30.0 --verbose --url=osm --zoom=12
+## ```
 
 
 ## ## 30W Timezone Rule
@@ -384,7 +431,7 @@ proc fetchFromSource(source: string, date: Datetime): float =
         response = response.strip() # clean response
         
         var price: float
-        if parseFloat(response, price) != 0: # overloaded from parseutils, returns ability of proc
+        if parseFloat(response, price) == 0: # 0 = error # overloaded from parseutils, returns ability of proc
             raise newException(DowDataError, "Could not parse price from response: " & response)
         
         return price
@@ -427,9 +474,9 @@ method getDowPrice(provider: HttpDowProvider, date: Datetime): float =
     ## **Raises:** `DowDataError` when all sources fail
     var lastError: ref Exception = nil
 
-    for i in 0..provider.sources.len:
-        let sourceIndex  = (provider.currentSourceIndex + i) mod provider.sources.len
-        let source = provider.sources[sourceIndex]
+    for i in 0..provider.sources.len-1:
+        let sourceIndex: int  = (provider.currentSourceIndex + i) mod provider.sources.len
+        let source: string = provider.sources[sourceIndex]
 
         try:
             let price: float = fetchFromSource(source, date)
@@ -772,14 +819,455 @@ proc `<=`*(a, b: GlobalGeohasher): bool =
 
 
 # =============================================================================
-# MAIN MODULE 
+# DEFINE SPESIFIC EXPORTS
 # =============================================================================
 
-
-when isMainModule:
-    discard
-    # TODO: add cmd parsing
 
 when defined(test):
     export parseHexFloat, findLatestDowDate, getApplicableDowDate, getApplicableDowDateGlobal,
            generateGeohashString, md5ToCoordinateOffsets, applyOffsetsToGraticule
+
+
+# =============================================================================
+# MAIN MODULE Command-line interface for XKCD Geohashing using docopt
+# =============================================================================
+
+
+when isMainModule:
+    import std/[json, strformat, strutils, options, math]
+    import docopt
+
+
+    # =============================================================================
+    # MOCK DOW JONES PROVIDER FOR TESTING PURPOSES
+    # =============================================================================
+
+
+    type MockDowProvider = ref object of DowJonesProvider
+        data: seq[(DateTime, float)]
+
+
+    method getDowPrice(dowProvider: MockDowProvider, date: Datetime): float =
+        for (mockdate, price) in dowProvider.data:
+            if mockdate.format("yyyy-MM-dd") == date.format("yyyy-MM-dd"):
+                return price
+            
+        raise newException(DowDataError, "No mock data for date: " & date.format("yyyy-MM-dd"))
+
+
+    proc newMockDowProvider(data: seq[(DateTime, float)]): MockDowProvider =
+        return MockDowProvider(data: data)
+    
+
+    let mockData: seq[(DateTime, float)] = @[
+        # 2008-05-26 range (-5 to +5)
+        (dateTime(2008, mMay, 21, 0, 0, 0, 0, utc()), 12824.94),
+        (dateTime(2008, mMay, 22, 0, 0, 0, 0, utc()), 12597.69),
+        (dateTime(2008, mMay, 23, 0, 0, 0, 0, utc()), 12620.90),
+        (dateTime(2008, mMay, 24, 0, 0, 0, 0, utc()), 12620.90),
+        (dateTime(2008, mMay, 25, 0, 0, 0, 0, utc()), 12620.90),
+        (dateTime(2008, mMay, 26, 0, 0, 0, 0, utc()), 12620.90),
+        (dateTime(2008, mMay, 27, 0, 0, 0, 0, utc()), 12479.63),
+        (dateTime(2008, mMay, 28, 0, 0, 0, 0, utc()), 12542.90),
+        (dateTime(2008, mMay, 29, 0, 0, 0, 0, utc()), 12593.87),
+        (dateTime(2008, mMay, 30, 0, 0, 0, 0, utc()), 12647.36),
+        (dateTime(2008, mMay, 31, 0, 0, 0, 0, utc()), 12700.15),
+        
+        # 2000-02-02 range (-5 to +5)
+        (dateTime(2000, mJan, 28, 0, 0, 0, 0, utc()), 10305.76),
+        (dateTime(2000, mJan, 29, 0, 0, 0, 0, utc()), 10350.25),
+        (dateTime(2000, mJan, 30, 0, 0, 0, 0, utc()), 10400.73),
+        (dateTime(2000, mJan, 31, 0, 0, 0, 0, utc()), 10940.53),
+        (dateTime(2000, mFeb, 1, 0, 0, 0, 0, utc()), 10960.43),
+        (dateTime(2000, mFeb, 2, 0, 0, 0, 0, utc()), 10980.77),
+        (dateTime(2000, mFeb, 3, 0, 0, 0, 0, utc()), 10997.92),
+        (dateTime(2000, mFeb, 4, 0, 0, 0, 0, utc()), 11020.84),
+        (dateTime(2000, mFeb, 5, 0, 0, 0, 0, utc()), 11041.67),
+        (dateTime(2000, mFeb, 6, 0, 0, 0, 0, utc()), 11062.55),
+        (dateTime(2000, mFeb, 7, 0, 0, 0, 0, utc()), 11083.24),
+        
+        # 2012-12-12 range (-5 to +5)
+        (dateTime(2012, mDec, 7, 0, 0, 0, 0, utc()), 13025.58),
+        (dateTime(2012, mDec, 8, 0, 0, 0, 0, utc()), 13040.77),
+        (dateTime(2012, mDec, 9, 0, 0, 0, 0, utc()), 13055.94),
+        (dateTime(2012, mDec, 10, 0, 0, 0, 0, utc()), 13070.13),
+        (dateTime(2012, mDec, 11, 0, 0, 0, 0, utc()), 13085.25),
+        (dateTime(2012, mDec, 12, 0, 0, 0, 0, utc()), 13100.34),
+        (dateTime(2012, mDec, 13, 0, 0, 0, 0, utc()), 13115.67),
+        (dateTime(2012, mDec, 14, 0, 0, 0, 0, utc()), 13130.89),
+        (dateTime(2012, mDec, 15, 0, 0, 0, 0, utc()), 13145.82),
+        (dateTime(2012, mDec, 16, 0, 0, 0, 0, utc()), 13160.45),
+        (dateTime(2012, mDec, 17, 0, 0, 0, 0, utc()), 13175.73),
+        
+        # Current date range (-5 to +5) - using 2025-08-24 as base
+        (dateTime(2025, mJul, 25, 0, 0, 0, 0, utc()), 38700.45),
+        (dateTime(2025, mJul, 26, 0, 0, 0, 0, utc()), 38750.78),
+        (dateTime(2025, mJul, 27, 0, 0, 0, 0, utc()), 38800.23),
+        (dateTime(2025, mJul, 28, 0, 0, 0, 0, utc()), 38850.56),
+        (dateTime(2025, mJul, 29, 0, 0, 0, 0, utc()), 38900.89),
+        (dateTime(2025, mJul, 30, 0, 0, 0, 0, utc()), 38950.15),
+        (dateTime(2025, mJul, 31, 0, 0, 0, 0, utc()), 39000.42),
+        (dateTime(2025, mAug, 1, 0, 0, 0, 0, utc()), 39050.67),
+        (dateTime(2025, mAug, 2, 0, 0, 0, 0, utc()), 39100.23),
+        (dateTime(2025, mAug, 3, 0, 0, 0, 0, utc()), 39150.78),
+        (dateTime(2025, mAug, 4, 0, 0, 0, 0, utc()), 39200.34),
+        (dateTime(2025, mAug, 5, 0, 0, 0, 0, utc()), 39250.89),
+        (dateTime(2025, mAug, 6, 0, 0, 0, 0, utc()), 39300.45),
+        (dateTime(2025, mAug, 7, 0, 0, 0, 0, utc()), 39350.12),
+        (dateTime(2025, mAug, 8, 0, 0, 0, 0, utc()), 39400.67),
+        (dateTime(2025, mAug, 9, 0, 0, 0, 0, utc()), 39450.23),
+        (dateTime(2025, mAug, 10, 0, 0, 0, 0, utc()), 39500.56),
+        (dateTime(2025, mAug, 11, 0, 0, 0, 0, utc()), 39550.89),
+        (dateTime(2025, mAug, 12, 0, 0, 0, 0, utc()), 39600.15),
+        (dateTime(2025, mAug, 13, 0, 0, 0, 0, utc()), 39650.42),
+        (dateTime(2025, mAug, 14, 0, 0, 0, 0, utc()), 39700.78),
+        (dateTime(2025, mAug, 15, 0, 0, 0, 0, utc()), 39750.23),
+        (dateTime(2025, mAug, 16, 0, 0, 0, 0, utc()), 39800.56),
+        (dateTime(2025, mAug, 17, 0, 0, 0, 0, utc()), 39850.89),
+        (dateTime(2025, mAug, 18, 0, 0, 0, 0, utc()), 39900.15),
+        (dateTime(2025, mAug, 19, 0, 0, 0, 0, utc()), 39950.42),
+        (dateTime(2025, mAug, 20, 0, 0, 0, 0, utc()), 40000.78),
+        (dateTime(2025, mAug, 21, 0, 0, 0, 0, utc()), 40050.23),
+        (dateTime(2025, mAug, 22, 0, 0, 0, 0, utc()), 40100.67),
+        (dateTime(2025, mAug, 23, 0, 0, 0, 0, utc()), 40150.89),
+        (dateTime(2025, mAug, 24, 0, 0, 0, 0, utc()), 40200.34),
+        (dateTime(2025, mAug, 25, 0, 0, 0, 0, utc()), 40250.75),
+        (dateTime(2025, mAug, 26, 0, 0, 0, 0, utc()), 40300.12),
+        (dateTime(2025, mAug, 27, 0, 0, 0, 0, utc()), 40350.45),
+        (dateTime(2025, mAug, 28, 0, 0, 0, 0, utc()), 40400.78),
+        (dateTime(2025, mAug, 29, 0, 0, 0, 0, utc()), 40450.23),
+
+    ]
+
+
+    # =============================================================================
+    # DOCOPT SPECIFICATION
+    # =============================================================================
+
+
+    const doc: string = """
+    XKCD Geohash Calculator
+
+    Usage:
+        xkcdgeohash --lat=<latitude> --lon=<longitude> [options]
+        xkcdgeohash --global [options]
+        xkcdgeohash --version
+        xkcdgeohash --help
+
+    Options:
+        --lat=<latitude>         Target latitude
+        --lon=<longitude>        Target longitude
+        -d, --date=DATE          Target date (YYYY-MM-DD, default: today)
+        -g, --global             Calculate global geohash
+        -v, --verbose            Show additional information
+        -j, --json               Output as JSON
+        -f, --format=FORMAT      Output format [default: decimal]
+                                (decimal, dms, coordinates)
+        --from=DATE              Start date for range
+        --to=DATE                End date for range  
+        --days=N                 Last N days from today
+        --source=URL             Dow Jones data source URL
+        --data-file=FILE         Local Dow Jones data file
+        --url=SERVICE            Generate map URL for service
+                                (google, bing, osm, waymarked)
+        --zoom=LEVEL             Zoom level for map URLs [default: 15]
+        --marker                 Add marker to map URL
+        -h, --help               Show this help message
+        --version                Show version
+        --test                   Toggle use of mockdata when testing
+
+    Output Formats:
+        decimal                  68.857713, -30.544544 (default)
+        dms                      68°51'27.8"N, 30°32'40.4"W
+        coordinates              68.857713,-30.544544
+
+    URL Services:
+        google                   Google Maps
+        bing                     Bing Maps  
+        osm                      OpenStreetMap
+        waymarked                Waymarked Trails (hiking/cycling routes)
+
+    Examples:
+        xkcdgeohash --lat=68.0 --lon=-30.0
+        xkcdgeohash --global --date=2008-05-26
+        xkcdgeohash --lat=68.0 --lon=-30.0 --url=google --marker
+        xkcdgeohash --lat=45.0 --lon=-93.0 --days=7 --url=google --json
+        xkcdgeohash --lat=68.0 --lon=-30.0 --verbose --url=osm --zoom=12
+    """
+
+
+    # =============================================================================
+    # TYPES AND CONSTANTS
+    # =============================================================================
+
+
+    type
+        OutputFormat = enum
+            ofDecimal = "decimal"
+            ofDMS = "dms"
+            ofCoordinates = "coordinates"
+        
+        MapService = enum
+            msGoogle = "google"
+            msBing = "bing"
+            msOSM = "osm"
+            msWaymarked = "waymarked"
+    
+
+    const CLI_VERSION = "1.0.0"
+
+    
+    # =============================================================================
+    # UTILITY FUNCTIONS
+    # =============================================================================
+    
+
+    proc parseDate(dateStr: string): DateTime =
+        ## Parse date string in YYYY-MM-DD format
+        try:
+            result = parse(dateStr, "yyyy-MM-dd")
+        except TimeParseError:
+            raise newException(ValueError, "Invalid date format. Use YYYY-MM-DD")
+        except TimeFormatParseError:
+            raise newException(ValueError, "Invalid date format. Use YYYY-MM-DD")
+
+
+    proc formatCoordinate(coord: float, isLatitude: bool, format: OutputFormat): string =
+        ## Format coordinate according to specified format
+        case format
+        of ofDecimal:
+            return formatFloat(coord, ffDecimal, 6)
+        of ofCoordinates:
+            return formatFloat(coord, ffDecimal, 6)
+        of ofDMS:
+            let absCoord: float = abs(coord)
+            let degrees: int = int(absCoord)
+            let minutes: int = int((absCoord - float(degrees)) * 60.0)
+            let seconds: float = ((absCoord - float(degrees)) * 60.0 - float(minutes)) * 60.0
+
+            let direction =
+                if isLatitude:
+                    if coord >= 0: 
+                        "N" 
+                    else: 
+                        "S"
+                else:
+                    if coord >= 0: 
+                        "E" 
+                    else: 
+                        "W"
+            
+            return &"{degrees}°{minutes}'{seconds:.1f}\"{direction}" #U+00B0
+    
+
+    proc formatOutput(geohashResult: GeohashResult, format: OutputFormat): string =
+        ## Format geohash result according to format
+        let lat: string = formatCoordinate(geohashResult.latitude, true, format)
+        let lon: string = formatCoordinate(geohashResult.longitude, false, format)
+
+        case format
+        of ofDecimal, ofDMS:
+            return &"{lat}, {lon}"
+        of ofCoordinates:
+            return &"{lat},{lon}"
+
+
+    proc generateMapUrl(geohashResult: GeohashResult, service: MapService, zoom: int, addMarker: bool): string =
+        ## Generate map URL for the specified service
+        let lat: string = formatFloat(geohashResult.latitude, ffDecimal, 6)
+        let lon: string = formatFloat(geohashResult.longitude, ffDecimal, 6)
+        
+        case service
+        of msGoogle:
+            result = &"https://maps.google.com/?q={lat},{lon}&z={zoom}"
+            if addMarker:
+                result = &"https://maps.google.com/?q={lat},{lon}&z={zoom}"
+            return
+        of msBing:
+            result = &"https://www.bing.com/maps/?cp={lat}~{lon}&lvl={zoom}"
+            if addMarker:
+                result = &"https://www.bing.com/maps/?cp={lat}~{lon}&lvl={zoom}&sp=point.{lat}_{lon}"
+            return
+        of msOSM:
+            return &"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}&zoom={zoom}"
+        of msWaymarked:
+            return &"https://hiking.waymarkedtrails.org/#?map={zoom}/{lat}/{lon}"
+    
+
+    # =============================================================================
+    # MAIN PROCESSING
+    # =============================================================================
+
+
+    proc parseOutputFormat(formatStr: string): OutputFormat =
+        ## Parse output format string
+        case formatStr.toLowerAscii()
+        of "decimal":
+            return ofDecimal
+        of "dms":
+            return ofDMS
+        of "coordinates":
+            return ofCoordinates
+        else:
+            raise newException(ValueError, "Invalid format. Use: decimal, dms, or coordinates")
+
+
+    proc parseMapService(serviceStr: string): MapService =
+        ## Parse map service string
+        case serviceStr.toLowerAscii()
+        of "google":
+            return msGoogle
+        of "bing":
+            return msBing
+        of "osm":
+            return msOSM
+        of "waymarked":
+            return msWaymarked
+        else:
+            raise newException(ValueError, "Invalid service. Use: google, bing, osm, or waymarked")
+
+        
+    proc processGeohash(args: Table[string, Value]): int =
+        ## Main processing function
+        try:
+            # Extract and validate basic arguments (and instringify if stringified)
+            let latitude: float = if args["--lat"]: parseFloat($args["--lat"]) else: NaN
+            let longitude: float = if args["--lon"]: parseFloat($args["--lon"]) else: NaN
+            let isGlobal: bool = bool(args["--global"])
+            let verbose: bool = bool(args["--verbose"])
+            let outputJson: bool = bool(args["--json"])
+            let addMarker: bool = bool(args["--marker"])
+            let testDataToggle: bool = bool(args["--test"])
+
+            # Parse format option
+            let formatStr: string = if args["--format"]: $args["--format"] else: "decimal"
+            let outputFormat: OutputFormat = parseOutputFormat(formatStr)
+
+            # Parse zoom level (for map service)
+            let zoomLevel: int = if args["--zoom"]: parseInt($args["--zoom"]) else: 15
+
+            # Parse map service
+            let mapService: Option[MapService] = if args["--url"]:
+                some(parseMapService($args["--url"]))
+            else:
+                none(MapService)
+            
+            # Determine target date(s)
+            var dates: seq[DateTime] = @[]
+
+            if args["--days"] and parseInt($args["--days"]) > 0:
+                # Process last N days
+                let daysBack: int = parseInt($args["--days"])
+                for i in 0..<daysBack:
+                    dates.add(now() - i.days)
+            elif args["--from"] and args["--to"]:
+                # Process date range
+                let fromDate: DateTime = parseDate($args["--from"])
+                let toDate: DateTime = parseDate($args["--to"])
+                var currentDate: DateTime = fromDate
+                while currentDate <= toDate:
+                    dates.add(currentDate)
+                    currentDate = currentDate + 1.days
+            else:
+                # Process single date (fallback/common)
+                let targetDate: DateTime = if args["--date"]: parseDate($args["--date"]) else: now()
+                dates.add(targetDate)
+
+            # Check coordinate requirements
+            let hasCoords: bool = not latitude.isNaN and not longitude.isNaN # need to exist if local
+            let needsGlobal: bool = isGlobal or not hasCoords # need to exist for global
+
+            if not needsGlobal and (latitude.isNaN or longitude.isNaN):
+                echo "Error: Provide both --lat and --lon for local hashes, or use --global for global hashes"
+                return 1
+
+            # Calculate geohashe(s) (xkcdgeohash)
+            # TODO: Use OOP api for multiple dates
+            var geohashResults: seq[GeohashResult] = @[]
+
+            if testDataToggle:
+                let mockDowProvider: MockDowProvider = newMockDowProvider(mockData)
+
+                for targetDate in dates:
+                    let geohashResult: GeohashResult = if needsGlobal:
+                        xkcdglobalgeohash(targetDate, dowProvider = mockDowProvider)
+                    else:
+                        xkcdgeohash(latitude, longitude, targetDate, dowProvider = mockDowProvider)
+                    
+                    geohashResults.add(geohashResult)
+            else: 
+                for targetDate in dates:
+                    let geohashResult: GeohashResult = if needsGlobal:
+                        xkcdglobalgeohash(targetDate)
+                    else:
+                        xkcdgeohash(latitude, longitude, targetDate)
+                    
+                    geohashResults.add(geohashResult)
+
+            # Output results in desired formatting
+            if outputJson:
+                # JSON output
+                var jsonResults: JsonNode = newJArray()
+                for geohashResult in geohashResults:
+                    var jsonResult: JsonNode = %*{
+                        "date": geohashResult.usedDate.format("yyyy-MM-dd"),
+                        "latitude": geohashResult.latitude,
+                        "longitude": geohashResult.longitude,
+                        "used_dow_date": geohashResult.usedDowDate.format("yyyy-MM-dd"),
+                        "coordinates": formatOutput(geohashResult, outputFormat)
+                    }
+                    
+                    if mapService.isSome():
+                        jsonResult["map_url"] = %generateMapUrl(geohashResult, mapService.get(), zoomLevel, addMarker)
+                    
+                    jsonResults.add(jsonResult)
+                
+                echo pretty(jsonResults)
+
+            else:
+                # Plain text output
+                for geohashResult in geohashResults:
+                    let coords: string = formatOutput(geohashResult, outputFormat)
+
+                    if verbose:
+                        # Verbose: show metadata
+                        echo &"{coords} (used Dow: {geohashResult.usedDowDate.format(\"yyyy-MM-dd\")}, target: {geohashResult.usedDate.format(\"yyyy-MM-dd\")})"
+                    else:
+                        # Normal: show coordinates only
+                        if dates.len > 1:
+                            echo &"{geohashResult.usedDate.format(\"yyyy-MM-dd\")}: {coords}"
+                        else:
+                            echo coords
+                    
+                    # Add map URL if requested
+                    if mapService.isSome():
+                        let mapUrl: string = generateMapUrl(geohashResult, mapService.get(), zoomLevel, addMarker)
+                        if verbose:
+                            echo &"Map: {mapUrl}"
+                        elif not outputJson:
+                            echo mapUrl
+
+            return 0
+    
+        except ValueError as e:
+            echo &"Invalid input: {e.msg}"
+            return 1
+        except DowDataError as e:
+            echo &"Error fetching Dow Jones data: {e.msg}"
+            return 2
+        except GeohashError as e:
+            echo &"Geohash error: {e.msg}"
+            return 3
+        except Exception as e:
+            echo &"Unexpected error: {e.msg}"
+            return 4
+
+
+    # =============================================================================
+    # MAIN ENTRY POINT
+    # =============================================================================
+
+
+    let args: Table[string, Value] = docopt(doc, version = CLI_VERSION)
+    let exitCode: int = processGeohash(args)
+    quit(exitCode)

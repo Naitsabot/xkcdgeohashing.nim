@@ -33,7 +33,7 @@ nimble test
 Includes tests for the based 30W timezone rule found on the Geohashing wiki:: https://geohashing.site/geohashing/30W_Time_Zone_Rule
 
 # Docs
-- You can compile the HTML docs by applying `nim doc` on `src/xkcdgeohash.nin`
+- You can compile the HTML docs by applying `nim doc` on `src/xkcdgeohash.nim`
 
 Implementation of the geohashing algorithm from https://xkcd.com/426/
 
@@ -119,8 +119,55 @@ echo "Global coordinates: ", globalResult.latitude, ", ", globalResult.longitude
 
 
 ## **Commandline Use**:
-
-**TODO**: *Yet to be implemented*
+```
+XKCD Geohash Calculator
+ 
+Usage:
+    xkcdgeohash --lat=<latitude> --lon=<longitude> [options]
+    xkcdgeohash --global [options]
+    xkcdgeohash --version
+    xkcdgeohash --help
+ 
+Options:
+    --lat=<latitude>         Target latitude
+    --lon=<longitude>        Target longitude
+    -d, --date=DATE          Target date (YYYY-MM-DD, default: today)
+    -g, --global             Calculate global geohash
+    -v, --verbose            Show additional information
+    -j, --json               Output as JSON
+    -f, --format=FORMAT      Output format [default: decimal]
+                            (decimal, dms, coordinates)
+    --from=DATE              Start date for range
+    --to=DATE                End date for range  
+    --days=N                 Last N days from today
+    --source=URL             Dow Jones data source URL
+    --data-file=FILE         Local Dow Jones data file
+    --url=SERVICE            Generate map URL for service
+                            (google, bing, osm, waymarked)
+    --zoom=LEVEL             Zoom level for map URLs [default: 15]
+    --marker                 Add marker to map URL
+    -h, --help               Show this help message
+    --version                Show version
+    --test                   Toggle use of mockdata when testing
+ 
+Output Formats:
+    decimal                  68.857713, -30.544544 (default)
+    dms                      68°51'27.8"N, 30°32'40.4"W
+    coordinates              68.857713,-30.544544
+ 
+URL Services:
+    google                   Google Maps
+    bing                     Bing Maps  
+    osm                      OpenStreetMap
+    waymarked                Waymarked Trails (hiking/cycling routes)
+ 
+Examples:
+    xkcdgeohash --lat=68.0 --lon=-30.0
+    xkcdgeohash --global --date=2008-05-26
+    xkcdgeohash --lat=68.0 --lon=-30.0 --url=google --marker
+    xkcdgeohash --lat=45.0 --lon=-93.0 --days=7 --url=google --json
+    xkcdgeohash --lat=68.0 --lon=-30.0 --verbose --url=osm --zoom=12
+```
 
 
 ## 30W Timezone Rule

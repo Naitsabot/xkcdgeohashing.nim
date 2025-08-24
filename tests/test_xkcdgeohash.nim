@@ -1,16 +1,12 @@
-## Geohashing library for Nim - Testing
+## Geohashing library for Nim - Testing of src/xkcdgeohash.nim
 ##
 ## Implementation of the geohashing algorithm from https://xkcd.com/426/
 ## Algorithm spec can be seen at: https://geohashing.site/geohashing/The_Algorithm
-## 
-## Basic usage:
-## Run: `nimble test`
 ##
 ## Copyright (c) 2025 Sebastian H. Lorenzen
 ## Licensed under MIT License
 
-import unittest
-import std/times
+import std/[times, unittest]
 
 import xkcdgeohash
 
@@ -360,7 +356,7 @@ suite "Official Test for 30W Time Zone Rule":
             (dateTime(2008, mMay, 29, 0, 0, 0, 0, utc()), 12593.87),
             (dateTime(2008, mMay, 30, 0, 0, 0, 0, utc()), 12647.36),
         ]
-        let dowProvider = newMockDowProvider(mockData)
+        let dowProvider: MockDowProvider = newMockDowProvider(mockData)
 
         for i in 0 .. (mockData.len - 2):
             let date: Datetime = mockData[1 + i][0]
@@ -408,7 +404,7 @@ suite "Official Test for 30W Time Zone Rule":
             (dateTime(2008, mMay, 29, 0, 0, 0, 0, utc()), 12593.87),
             (dateTime(2008, mMay, 30, 0, 0, 0, 0, utc()), 12647.36),
         ]
-        let dowProvider = newMockDowProvider(mockData)
+        let dowProvider: MockDowProvider = newMockDowProvider(mockData)
 
         for i in 0 .. (mockData.len - 2):
             let date: Datetime = mockData[1 + i][0]
@@ -465,24 +461,24 @@ suite "Official Test for The Scientific Notation Bug":
 
 suite "Operator Overloads":
     test "Graticule string representation":
-        let graticule = Graticule(lat: 68, lon: -30)
+        let graticule: Graticule = Graticule(lat: 68, lon: -30)
         check $graticule == "(68, -30)"
         
-        let negativeGraticule = Graticule(lat: -45, lon: 93)
+        let negativeGraticule: Graticule = Graticule(lat: -45, lon: 93)
         check $negativeGraticule == "(-45, 93)"
 
     test "Graticule equality":
-        let graticule1 = Graticule(lat: 68, lon: -30)
-        let graticule2 = Graticule(lat: 68, lon: -30)
-        let graticule3 = Graticule(lat: 45, lon: -93)
+        let graticule1: Graticule = Graticule(lat: 68, lon: -30)
+        let graticule2: Graticule = Graticule(lat: 68, lon: -30)
+        let graticule3: Graticule = Graticule(lat: 45, lon: -93)
         
         check graticule1 == graticule2
         check graticule1 != graticule3
 
     test "Graticule ordering":
-        let graticule1 = Graticule(lat: 45, lon: -93)
-        let graticule2 = Graticule(lat: 68, lon: -30)
-        let graticule3 = Graticule(lat: 45, lon: -30)
+        let graticule1: Graticule = Graticule(lat: 45, lon: -93)
+        let graticule2: Graticule = Graticule(lat: 68, lon: -30)
+        let graticule3: Graticule = Graticule(lat: 45, lon: -30)
         
         check graticule1 < graticule2  # lat: 45 < 68
         check graticule1 < graticule3  # same lat, lon: -93 < -30
@@ -490,29 +486,29 @@ suite "Operator Overloads":
         check graticule1 <= graticule2  # less than
 
     test "GeohashResult string representation":
-        let result = GeohashResult(
+        let result: GeohashResult = GeohashResult(
             latitude: 68.857713,
             longitude: -30.544544,
             usedDate: dateTime(2008, mMay, 26),
             usedDowDate: dateTime(2008, mMay, 26)
         )
-        let expected = "GeohashResult(lat: 68.857713, lon: -30.544544, usedDate: 2008-05-26, usedDowDate: 2008-05-26)"
+        let expected: string = "GeohashResult(lat: 68.857713, lon: -30.544544, usedDate: 2008-05-26, usedDowDate: 2008-05-26)"
         check $result == expected
 
     test "GeohashResult equality":
-        let result1 = GeohashResult(
+        let result1: GeohashResult = GeohashResult(
             latitude: 68.857713,
             longitude: -30.544544,
             usedDate: dateTime(2008, mMay, 26),
             usedDowDate: dateTime(2008, mMay, 26)
         )
-        let result2 = GeohashResult(
+        let result2: GeohashResult = GeohashResult(
             latitude: 68.857713,
             longitude: -30.544544,
             usedDate: dateTime(2008, mMay, 26),
             usedDowDate: dateTime(2008, mMay, 26)
         )
-        let result3 = GeohashResult(
+        let result3: GeohashResult = GeohashResult(
             latitude: 45.123456,
             longitude: -93.654321,
             usedDate: dateTime(2008, mMay, 27),
@@ -523,19 +519,19 @@ suite "Operator Overloads":
         check result1 != result3
 
     test "GeohashResult ordering":
-        let result1 = GeohashResult(
+        let result1: GeohashResult = GeohashResult(
             latitude: 45.0,
             longitude: -93.0,
             usedDate: dateTime(2008, mMay, 26),
             usedDowDate: dateTime(2008, mMay, 26)
         )
-        let result2 = GeohashResult(
+        let result2: GeohashResult = GeohashResult(
             latitude: 68.0,
             longitude: -30.0,
             usedDate: dateTime(2008, mMay, 27),
             usedDowDate: dateTime(2008, mMay, 27)
         )
-        let result3 = GeohashResult(
+        let result3: GeohashResult = GeohashResult(
             latitude: 45.0,
             longitude: -95.0,
             usedDate: dateTime(2008, mMay, 26),
@@ -548,46 +544,46 @@ suite "Operator Overloads":
         check result1 <= result2  # less than
 
     test "Geohasher string representation":
-        let mockProvider = newMockDowProvider(@[(dateTime(2008, mMay, 26), 12620.90)])
-        let geohasher = newGeohasher(68, -30, mockProvider)
+        let mockProvider: MockDowProvider = newMockDowProvider(@[(dateTime(2008, mMay, 26), 12620.90)])
+        let geohasher: Geohasher = newGeohasher(68, -30, mockProvider)
         check $geohasher == "Geohasher((68, -30))"
 
     test "Geohasher equality":
-        let mockProvider1 = newMockDowProvider(@[(dateTime(2008, mMay, 26), 12620.90)])
-        let mockProvider2 = newMockDowProvider(@[(dateTime(2008, mMay, 27), 12479.63)])
+        let mockProvider1: MockDowProvider = newMockDowProvider(@[(dateTime(2008, mMay, 26), 12620.90)])
+        let mockProvider2: MockDowProvider = newMockDowProvider(@[(dateTime(2008, mMay, 27), 12479.63)])
         
-        let geohasher1 = newGeohasher(68, -30, mockProvider1)
-        let geohasher2 = newGeohasher(68, -30, mockProvider2)
-        let geohasher3 = newGeohasher(45, -93, mockProvider1)
+        let geohasher1: Geohasher = newGeohasher(68, -30, mockProvider1)
+        let geohasher2: Geohasher = newGeohasher(68, -30, mockProvider2)
+        let geohasher3: Geohasher = newGeohasher(45, -93, mockProvider1)
         
         check geohasher1 == geohasher2  # same graticule, different providers
         check geohasher1 != geohasher3  # different graticule
 
     test "GlobalGeohasher string representation":
-        let mockProvider = newMockDowProvider(@[(dateTime(2008, mMay, 26), 12620.90)])
-        let globalGeohasher = newGlobalGeohasher(mockProvider)
+        let mockProvider: MockDowProvider = newMockDowProvider(@[(dateTime(2008, mMay, 26), 12620.90)])
+        let globalGeohasher: GlobalGeohasher = newGlobalGeohasher(mockProvider)
         check $globalGeohasher == "GlobalGeohasher()"
 
     test "GlobalGeohasher equality":
-        let mockProvider1 = newMockDowProvider(@[(dateTime(2008, mMay, 26), 12620.90)])
-        let mockProvider2 = newMockDowProvider(@[(dateTime(2008, mMay, 27), 12479.63)])
+        let mockProvider1: MockDowProvider = newMockDowProvider(@[(dateTime(2008, mMay, 26), 12620.90)])
+        let mockProvider2: MockDowProvider = newMockDowProvider(@[(dateTime(2008, mMay, 27), 12479.63)])
         
-        let globalGeohasher1 = newGlobalGeohasher(mockProvider1)
-        let globalGeohasher2 = newGlobalGeohasher(mockProvider1)
-        let globalGeohasher3 = newGlobalGeohasher(mockProvider2)
+        let globalGeohasher1: GlobalGeohasher = newGlobalGeohasher(mockProvider1)
+        let globalGeohasher2: GlobalGeohasher = newGlobalGeohasher(mockProvider1)
+        let globalGeohasher3: GlobalGeohasher = newGlobalGeohasher(mockProvider2)
         
         check globalGeohasher1 == globalGeohasher2  # same provider
         check globalGeohasher1 != globalGeohasher3  # different providers
 
     test "GlobalGeohasher ordering":
-        let mockProvider1 = newMockDowProvider(@[(dateTime(2008, mMay, 26), 12620.90)])
-        let mockProvider2 = newMockDowProvider(@[(dateTime(2008, mMay, 27), 12479.63)])
+        let mockProvider1: MockDowProvider = newMockDowProvider(@[(dateTime(2008, mMay, 26), 12620.90)])
+        let mockProvider2: MockDowProvider = newMockDowProvider(@[(dateTime(2008, mMay, 27), 12479.63)])
         
-        let globalGeohasher1 = newGlobalGeohasher(mockProvider1)
-        let globalGeohasher2 = newGlobalGeohasher(mockProvider2)
+        let globalGeohasher1: GlobalGeohasher = newGlobalGeohasher(mockProvider1)
+        let globalGeohasher2: GlobalGeohasher = newGlobalGeohasher(mockProvider2)
         
         # Ordering is based on pointer comparison, so we just check consistency
-        let isLess = globalGeohasher1 < globalGeohasher2
+        let isLess: bool = globalGeohasher1 < globalGeohasher2
         check (globalGeohasher1 < globalGeohasher2) != (globalGeohasher2 < globalGeohasher1)  # antisymmetric
         check globalGeohasher1 <= globalGeohasher1  # reflexive
         
@@ -595,6 +591,3 @@ suite "Operator Overloads":
             check globalGeohasher1 <= globalGeohasher2
         else:
             check globalGeohasher2 <= globalGeohasher1
-
-
-echo ""
