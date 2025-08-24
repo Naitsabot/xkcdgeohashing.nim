@@ -982,9 +982,9 @@ when isMainModule:
                 result = &"https://maps.google.com/?q={lat},{lon}&z={zoom}"
             return
         of msBing:
-            result = &"https://www.bing.com/maps?cp={lat}~{lon}&lvl={zoom}"
+            result = &"https://www.bing.com/maps/?cp={lat}~{lon}&lvl={zoom}"
             if addMarker:
-                result = &"https://www.bing.com/maps?cp={lat}~{lon}&lvl={zoom}&sp=point.{lat}_{lon}"
+                result = &"https://www.bing.com/maps/?cp={lat}~{lon}&lvl={zoom}&sp=point.{lat}_{lon}"
             return
         of msOSM:
             return &"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}&zoom={zoom}"

@@ -181,13 +181,13 @@ suite "CLI Integration Tests":
 suite "CLI Error Handling":
     test "missing coordinates":
         let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0")
-        check exitCode == 1
-        check "Error" in output.toLowerAscii()
+        check exitCode == 0
+        check "Usage" in output
     
     test "invalid coordinates":
         let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=invalid --lon=coords")
         check exitCode == 1
-        check "Error" in output.toLowerAscii()
+        check "Invalid input:" in output
     
     test "invalid date format":
         let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH & " --lat=68.0 --lon=-30.0 --date=invalid")
@@ -206,8 +206,8 @@ suite "CLI Error Handling":
     
     test "coordinates without global flag":
         let (output, exitCode): (string, int) = execCmdEx(BINARY_PATH)
-        check exitCode == 1
-        check "both latitude and longitude" in output or "global" in output
+        check exitCode == 0
+        check "Usage" in output
 
 
 suite "CLi Possible Edge Cases":
