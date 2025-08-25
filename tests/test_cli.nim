@@ -1,4 +1,4 @@
-## Geohashing library for Nim - Testing of src/private/cli.nim
+## Geohashing library for Nim - Testing of CLI
 ##
 ## Copyright (c) 2025 Sebastian H. Lorenzen
 ## Licensed under MIT License
