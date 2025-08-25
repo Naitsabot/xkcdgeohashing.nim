@@ -837,6 +837,14 @@ when isMainModule:
     import std/[json, strformat, options, math]
     import docopt
 
+    # Conditionally import mock data - only when it exists/is available
+    when defined(test):
+        import ../tests/mock_dow_data
+        const HAS_MOCK_DATA: bool = true
+    else:
+        const HAS_MOCK_DATA: bool = false
+
+
 
     # =============================================================================
     # DOCOPT SPECIFICATION
@@ -1084,15 +1092,19 @@ when isMainModule:
             var geohashResults: seq[GeohashResult] = @[]
 
             if testDataToggle:
-                let mockDowProvider: MockDowProvider = newMockDowProvider(mockData)
-
-                for targetDate in dates:
-                    let geohashResult: GeohashResult = if needsGlobal:
-                        xkcdglobalgeohash(targetDate, dowProvider = mockDowProvider)
-                    else:
-                        xkcdgeohash(latitude, longitude, targetDate, dowProvider = mockDowProvider)
-                    
-                    geohashResults.add(geohashResult)
+                when HAS_MOCK_DATA:
+                    let mockDowProvider: MockDowProvider = newTestMockDowProvider()
+                    for targetDate in dates:
+                        let geohashResult: GeohashResult = if needsGlobal:
+                            xkcdglobalgeohash(targetDate, dowProvider = mockDowProvider)
+                        else:
+                            xkcdgeohash(latitude, longitude, targetDate, dowProvider = mockDowProvider)
+                        
+                        geohashResults.add(geohashResult)
+                else:
+                    echo "Error: --test flag used but no mock data available."
+                    echo "Compile with -d:testing to enable mock data support."
+                    return 1
             else: 
                 for targetDate in dates:
                     let geohashResult: GeohashResult = if needsGlobal:

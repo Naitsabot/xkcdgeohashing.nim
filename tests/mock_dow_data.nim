@@ -6,19 +6,14 @@
 
 import std/[times]
 
-import xkcdgeohash
+import ../src/xkcdgeohash
 
 
-# =============================================================================
-# MOCK DOW JONES PROVIDER FOR TESTING PURPOSES
-# =============================================================================
-
-
-type MockDowProvider = ref object of DowJonesProvider
+type MockDowProvider* = ref object of DowJonesProvider
     data: seq[(DateTime, float)]
 
 
-method getDowPrice(dowProvider: MockDowProvider, date: Datetime): float =
+method getDowPrice*(dowProvider: MockDowProvider, date: Datetime): float =
     for (mockdate, price) in dowProvider.data:
         if mockdate.format("yyyy-MM-dd") == date.format("yyyy-MM-dd"):
             return price
@@ -26,11 +21,11 @@ method getDowPrice(dowProvider: MockDowProvider, date: Datetime): float =
     raise newException(DowDataError, "No mock data for date: " & date.format("yyyy-MM-dd"))
 
 
-proc newMockDowProvider(data: seq[(DateTime, float)]): MockDowProvider =
+proc newMockDowProvider*(data: seq[(DateTime, float)]): MockDowProvider =
     return MockDowProvider(data: data)
 
 
-let mockData: seq[(DateTime, float)] = @[
+let TEST_DOW_DATA*: seq[(DateTime, float)] = @[
     # 2008-05-26 range (-5 to +5)
     (dateTime(2008, mMay, 21, 0, 0, 0, 0, utc()), 12824.94),
     (dateTime(2008, mMay, 22, 0, 0, 0, 0, utc()), 12597.69),
@@ -108,3 +103,7 @@ let mockData: seq[(DateTime, float)] = @[
     (dateTime(2025, mAug, 28, 0, 0, 0, 0, utc()), 40400.78),
     (dateTime(2025, mAug, 29, 0, 0, 0, 0, utc()), 40450.23),
 ]
+
+
+proc newTestMockDowProvider*(): MockDowProvider =
+    return newMockDowProvider(TEST_DOW_DATA)
