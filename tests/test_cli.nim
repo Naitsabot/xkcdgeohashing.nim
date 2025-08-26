@@ -1,4 +1,4 @@
-## Geohashing library for Nim - Testing of src/private/cli.nim
+## Geohashing library for Nim - Testing of CLI
 ##
 ## Copyright (c) 2025 Sebastian H. Lorenzen
 ## Licensed under MIT License
@@ -17,8 +17,8 @@ const BINARY_PATH: string = "./xkcdgeohash.exe"
 
 suite "CLI Integration Tests":
     setup:
-        # Build the binary before running tests
-        let buildResult: int = execCmd("nimble build")
+        # Build the binary with test flag before running tests
+        let buildResult: int = execCmd("nimble build -d:test")  # Added -d:test here
         if buildResult != 0:
             let text: string = "Failed to build binary"
             checkpoint(text)
