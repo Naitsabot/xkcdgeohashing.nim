@@ -920,7 +920,14 @@ when isMainModule:
             msWaymarked = "waymarked"
     
 
-    const CLI_VERSION = "1.0.0"
+    const CLI_VERSION = block:
+        const nimbleFile = staticRead("../xkcdgeohash.nimble")
+        var version = ""
+        for line in nimbleFile.splitLines():
+            if line.startsWith("version"):
+                version = line.split("=")[1].strip().strip(chars = {'"'})
+                break
+        version
 
     
     # =============================================================================
