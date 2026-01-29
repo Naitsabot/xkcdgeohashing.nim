@@ -1064,8 +1064,9 @@ when isMainModule:
             if args["--days"] and parseInt($args["--days"]) > 0:
                 # Process last N days
                 let daysBack: int = parseInt($args["--days"])
+                let startDate: DateTime = if args["--date"]: parseDate($args["--date"]) else: now()
                 for i in 0..<daysBack:
-                    dates.add(now() - i.days)
+                    dates.add(startDate - i.days)
             elif args["--from"] and args["--to"]:
                 # Process date range
                 let fromDate: DateTime = parseDate($args["--from"])

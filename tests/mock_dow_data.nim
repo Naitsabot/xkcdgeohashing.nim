@@ -65,7 +65,9 @@ let TEST_DOW_DATA*: seq[(DateTime, float)] = @[
     (dateTime(2012, mDec, 16, 0, 0, 0, 0, utc()), 13160.45),
     (dateTime(2012, mDec, 17, 0, 0, 0, 0, utc()), 13175.73),
     
-    # Current date range (-5 to +5) - using 2025-08-24 as base
+    # Current date range - using 2025-08-24 as base (extended for --days parameter)
+    (dateTime(2025, mJul, 23, 0, 0, 0, 0, utc()), 38600.12),
+    (dateTime(2025, mJul, 24, 0, 0, 0, 0, utc()), 38650.45),
     (dateTime(2025, mJul, 25, 0, 0, 0, 0, utc()), 38700.45),
     (dateTime(2025, mJul, 26, 0, 0, 0, 0, utc()), 38750.78),
     (dateTime(2025, mJul, 27, 0, 0, 0, 0, utc()), 38800.23),
