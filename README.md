@@ -3,6 +3,12 @@ Nim implementation for the geohashing algorithm described in xkcd #426.
 
 The algorithm is also described on the Geohashing wiki.
 
+# Install via Nimble (Nim lang package manager)
+
+```
+nimble install xkcdgeohash
+```
+
 # Compiling
 As a task:
 ```
